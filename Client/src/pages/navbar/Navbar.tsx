@@ -1,5 +1,64 @@
+import { NavLink } from "react-router"
+
+ 
+
  
 function Navbar() {
+
+
+  const NavItems =(
+    <>
+    <NavLink
+      to="/"
+      className={({ isActive }) =>
+        `relative px-4 py-2 font-medium transition-all duration-300 ${
+          isActive
+            ? "text-primary"
+            : "text-gray-600 hover:text-primary"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          Home
+          {isActive && (
+            <span className="absolute left-1/2 -bottom-1 w-2/3 h-0.5 bg-primary transform -translate-x-1/2 rounded-full transition-all duration-300" />
+          )}
+          {!isActive && (
+            <span className="absolute left-1/2 -bottom-1 w-0 h-0.5 bg-primary transform -translate-x-1/2 rounded-full group-hover:w-2/3 transition-all duration-300" />
+          )}
+        </>
+      )}
+    </NavLink>
+
+
+        <NavLink
+      to="/about"
+      className={({ isActive }) =>
+        `relative px-4 py-2 font-medium transition-all duration-300 ${
+          isActive
+            ? "text-primary"
+            : "text-gray-600 hover:text-primary"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          About
+          {isActive && (
+            <span className="absolute left-1/2 -bottom-1 w-2/3 h-0.5 bg-primary transform -translate-x-1/2 rounded-full transition-all duration-300" />
+          )}
+          {!isActive && (
+            <span className="absolute left-1/2 -bottom-1 w-0 h-0.5 bg-primary transform -translate-x-1/2 rounded-full group-hover:w-2/3 transition-all duration-300" />
+          )}
+        </>
+      )}
+    </NavLink>
+    
+    </>
+  )
+
+
   return (
    <div className="navbar bg-base-100 shadow-sm">
   <div className="navbar-start">
@@ -10,36 +69,25 @@ function Navbar() {
       <ul
         // tabIndex="-1"
         className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-        <li><a>Item 1</a></li>
         <li>
-          <a>Parent</a>
-          <ul className="p-2">
-            <li><a>Submenu 1</a></li>
-            <li><a>Submenu 2</a></li>
-          </ul>
+          {NavItems}
         </li>
-        <li><a>Item 3</a></li>
+         
       </ul>
     </div>
-    <a className="btn btn-ghost text-xl">daisyUI</a>
+    <a className="btn btn-ghost text-xl">CultureConnect</a>
   </div>
-  <div className="navbar-center hidden lg:flex">
-    <ul className="menu menu-horizontal px-1">
-      <li><a>Item 1</a></li>
-      <li>
-        <details>
-          <summary>Parent</summary>
-          <ul className="p-2 bg-base-100 w-40 z-1">
-            <li><a>Submenu 1</a></li>
-            <li><a>Submenu 2</a></li>
-          </ul>
-        </details>
-      </li>
-      <li><a>Item 3</a></li>
+  <div className="navbar-center hidden lg:flex gap-6">
+    <ul className="menu menu-horizontal px-1 ">
+      <li className=""><a>
+        {NavItems}
+        </a></li>
+       
     </ul>
   </div>
-  <div className="navbar-end">
-    <a className="btn">Button</a>
+  <div className="navbar-end space-x-2">
+    <a className="btn">login</a>
+    <a className="btn">register</a>
   </div>
 </div>
   )
