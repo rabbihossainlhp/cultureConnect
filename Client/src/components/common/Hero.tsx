@@ -5,7 +5,7 @@ import { Globe, Video, Users, Languages } from 'lucide-react'; // Install: npm i
 const Hero = () => {
     return (
       <div
-         className="hero h-[75vh] relative overflow-hidden"
+         className="hero h-auto lg:h-[80vh] relative overflow-hidden  "
          style={{
            backgroundImage:`url(${heroImage})`,
            backgroundSize:'cover',
@@ -13,7 +13,7 @@ const Hero = () => {
            backgroundRepeat:'no-repeat'
          }}
       >  
-        <div className="hero-overlay bg-linear-to-r from-blue-900/60 via-purple-900/50 to-orange-900/60"></div>
+        <div className=" hero-overlay bg-linear-to-r from-blue-900/60 via-purple-900/50 to-orange-900/60  "></div>
         
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
@@ -61,11 +61,11 @@ const Hero = () => {
               Learn from real people, not textbooks.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center ">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-linear-to-r from-orange-500 to-pink-500 text-white rounded-full font-semibold text-lg shadow-2xl hover:shadow-orange-500/50 transition-all flex items-center gap-2"
+                className="px-8 py-4 bg-linear-to-r from-orange-500 to-pink-500 text-white rounded-full font-semibold text-lg shadow-2xl hover:shadow-orange-500/50 transition-all flex items-center gap-2   "
               >
                 <Video size={20} />
                 Start Connecting Now
