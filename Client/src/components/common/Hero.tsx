@@ -46,7 +46,7 @@ const Hero = () => {
               className="inline-block mb-4"
             >
               <span className="px-4 py-2 bg-orange-500/20 border border-orange-500 rounded-full text-sm font-medium backdrop-blur-sm">
-                🌍 Join 50,000+ Cultural Learners Worldwide
+                Join 50,000+ Cultural Learners Worldwide
               </span>
             </motion.div>
 
