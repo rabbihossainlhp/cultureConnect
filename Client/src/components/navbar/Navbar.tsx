@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Video, BookOpen, Users, Bell, ChevronDown } from 'lucide-react';
+import { NavLink } from 'react-router';
 
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,11 +39,15 @@ function Navbar() {
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Globe size={18} /> Explore Cultures</a></li>
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Video size={18} /> Live Rooms</a></li>
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><BookOpen size={18} /> Missions</a></li>
-            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Users size={18} /> Community</a></li>
+            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Users size={18} />
+            <NavLink to={"/maindeshboard"}></NavLink>
+             Community</a></li>
           </ul>
         </div>
         
-        <a className="btn btn-ghost text-2xl font-bold flex items-center gap-2 hover:bg-transparent">
+        <NavLink to={"/"}>
+
+<a className="btn btn-ghost text-2xl font-bold flex items-center gap-2 hover:bg-transparent">
           <div className="w-10 h-10 bg-linear-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
             <Globe className="text-white" size={24} />
           </div>
@@ -50,6 +55,8 @@ function Navbar() {
             CultureConnect
           </span>
         </a>
+
+        </NavLink>
       </div>
 
       <div className="navbar-center hidden lg:flex">
@@ -84,10 +91,13 @@ function Navbar() {
           </li>
 
           <li>
+               <NavLink to={"/maindeshboard"}>
             <a className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
               <Users size={18} />
+               
               Community
             </a>
+               </NavLink>
           </li>
         </ul>
       </div>
