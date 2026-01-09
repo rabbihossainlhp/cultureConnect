@@ -23,7 +23,7 @@ function Navbar() {
   }, []);
 
   return (
-    <div className={`navbar px-6 lg:px-12 fixed top-0 z-50 transition-all duration-300 ${
+    <div className={`navbar    fixed top-0 z-50 transition-all duration-300 ${
       isScrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-md shadow-sm'
     }`}>
       
