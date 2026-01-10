@@ -26,7 +26,7 @@ const StatsSection = () => {
   ];
 
   return (
-    <div className="bg-gray-50 p-8 min-h-screen flex items-center justify-center">
+    <div className="   pb-0   flex items-center justify-center">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
         {stats.map((item, index) => (
           <div 

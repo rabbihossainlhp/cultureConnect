@@ -22,7 +22,7 @@ function Navbar() {
   }, []);
 
   return (
-    <div className={`fixed top-0 z-50 w-full h-48 flex justify-between items-center text-white transition-all duration-300 py-12 ${
+    <div className={`fixed top-0 z-50 w-full h-48 flex justify-between items-center text-white transition-all duration-300 py-12 static ${
   isScrolled 
     ? 'bg-white shadow-lg' 
     : 'bg-linear-to-r from-[#4a78a0] via-[#85b1ad] to-[#b8e3b5] backdrop-blur-md shadow-sm'
