@@ -3,6 +3,7 @@ import CommunityActivity from "../CommunityActivity/CommunityActivity"
 import CulturalSpotlight from "../CulturalSpotlight/CulturalSpotlight"
 import Navbar from "../DesNavbar/Navbar"
 import StatsSection from "../StatsSection/StatsSection"
+import SuggestedMissions from "../SuggestedMissions/SuggestedMissions"
 
  
  
@@ -19,6 +20,9 @@ function HomeDeshboard() {
   {/* Left Section   */}
   <div className="col-span-4">
     <ActiveRooms></ActiveRooms>
+   <div className="py-5">
+     <SuggestedMissions></SuggestedMissions>
+   </div>
   </div>
 
   {/* Right Section  */}
