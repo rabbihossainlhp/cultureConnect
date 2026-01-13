@@ -49,50 +49,84 @@ const getDifficultyStyles = (difficulty: string) => {
 
 function SuggestedMissions() {
   return (
-    <div className="w-full">
+      <div className="w-full max-w-full">
+      
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Suggested Missions</h2>
-        <button className="text-[#5a8bb8] font-semibold hover:underline">View All</button>
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-900">
+          Suggested Missions
+        </h2>
+        <button className="text-sm md:text-base text-[#5a8bb8] font-semibold hover:underline">
+          View All
+        </button>
       </div>
 
       {/* Mission List */}
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col gap-3 md:gap-4">
         {missionsData.map((mission) => (
           <div 
             key={mission.id} 
-            className="bg-white rounded-[2rem] p-5 flex items-center justify-between shadow-sm border border-gray-50 hover:shadow-md transition-shadow duration-200"
+            className="
+              bg-white rounded-2xl md:rounded-[2rem]
+              p-[4%] md:p-5
+              flex flex-col md:flex-row
+              items-start md:items-center
+              justify-between
+              gap-4
+              shadow-sm border border-gray-100
+              hover:shadow-md transition
+              w-full
+            "
           >
-            {/* Left Section: Icon & Content */}
-            <div className="flex items-center space-x-5">
-              <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500/80">
-                <BookOpen size={28} strokeWidth={1.5} />
-              </div>
+            {/* Left Section */}
+            <div className="flex items-start md:items-center gap-4 w-full md:w-[75%]">
               
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{mission.title}</h3>
-                <div className="flex items-center space-x-3">
-                  <span className="px-4 py-1 bg-gray-100 text-gray-500 rounded-full text-sm font-medium">
+              {/* Icon */}
+              <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 shrink-0">
+                <BookOpen size={24} className="md:size-[28px]" />
+              </div>
+
+              {/* Text */}
+              <div className="w-full">
+                <h3 className="text-base md:text-xl font-bold text-gray-800 mb-1 md:mb-2">
+                  {mission.title}
+                </h3>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs md:text-sm font-medium">
                     {mission.category}
                   </span>
-                  <span className={`px-4 py-1 rounded-full text-sm font-bold ${getDifficultyStyles(mission.difficulty)}`}>
+
+                  <span className={`px-3 py-1 rounded-full text-xs md:text-sm font-bold ${getDifficultyStyles(mission.difficulty)}`}>
                     {mission.difficulty}
                   </span>
-                  <span className="text-gray-400 text-sm font-medium">
+
+                  <span className="text-gray-400 text-xs md:text-sm font-medium">
                     {mission.points} points
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right Section: Button */}
-            <button className="px-8 py-2.5 bg-[#5a8bb8] text-white font-bold rounded-full hover:bg-[#4a78a0] transition-colors shadow-sm">
-              Start
-            </button>
+            {/* Button */}
+            <div className="w-full md:w-[20%] flex md:justify-end">
+              <button className="
+                w-full md:w-auto
+                px-6 py-2.5
+                text-sm md:text-base
+                bg-[#5a8bb8] text-white font-bold
+                rounded-full
+                hover:bg-[#4a78a0]
+                transition shadow-sm
+              ">
+                Start
+              </button>
+            </div>
           </div>
         ))}
       </div>
     </div>
+
   );
 }
 

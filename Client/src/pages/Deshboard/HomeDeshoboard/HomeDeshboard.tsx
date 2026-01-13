@@ -28,7 +28,9 @@ function HomeDeshboard() {
   {/* Right Section  */}
   <div className="col-span-2 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-fit">
     <CommunityActivity></CommunityActivity>
-      
+      <div className="py-5">
+        <SuggestedMissions></SuggestedMissions>
+      </div>
   </div>
 </div>
     </div>
