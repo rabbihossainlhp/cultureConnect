@@ -40,7 +40,7 @@ function Navbar() {
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Video size={18} /> Live Rooms</a></li>
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><BookOpen size={18} /> Missions</a></li>
             <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Users size={18} />
-            <NavLink to={"/maindeshboard"}></NavLink>
+            <NavLink to={"/community"}></NavLink>
              Community</a></li>
           </ul>
         </div>
@@ -91,7 +91,7 @@ function Navbar() {
           </li>
 
           <li>
-               <NavLink to={"/maindeshboard"}>
+               <NavLink to={"/community"}>
             <a className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
               <Users size={18} />
                
