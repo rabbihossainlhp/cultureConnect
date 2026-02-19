@@ -33,7 +33,7 @@ const router = createBrowserRouter([
         Component: HomeDeshboard,
       },
       {
-    path:'homedeshboard',
+        path:'homedeshboard',
         Component: HomeDeshboard,
       }
 
