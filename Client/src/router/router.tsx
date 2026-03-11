@@ -2,6 +2,9 @@
 import RootLayOut from "../rootLayOut/RootLayOut";
 import Home from "../pages/Home";
 import NotFound from "../pages/NotFound";
+import MainDeshboard from "../pages/Deshboard/MainDeshboard/MainDeshboard";
+import HomeDeshboard from "../pages/Deshboard/HomeDeshoboard/HomeDeshboard";
+import Community from "../pages/Deshboard/Community";
  
 const router = createBrowserRouter([
   {
@@ -10,8 +13,36 @@ const router = createBrowserRouter([
     children:[ {
       index:true,
       Component:Home
-    }]
+    },
+
+    {
+      path:"community",
+      Component:Community
+    }
+    ]
   },
+
+
+
+    //main desh board
+  {
+    path: "/maindeshboard",
+    element: (
+          <MainDeshboard></MainDeshboard>
+    ),
+    children: [
+      {
+        index:true,
+        Component: HomeDeshboard,
+      },
+      {
+        path:'homedeshboard',
+        Component: HomeDeshboard,
+      }
+
+    ],
+  },
+
 
   {
     path:'/*',
