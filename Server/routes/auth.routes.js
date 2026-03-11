@@ -1,9 +1,11 @@
 //dependencies.....
 const router = require('express').Router();
-const { loginController } = require('../controllers/authController');
+const { loginController, registerController } = require('../controllers/authController');
 
 
+console.log('registerController:', typeof registerController);
 
+router.post('/register',registerController);
 router.post('/login', loginController);
 
 

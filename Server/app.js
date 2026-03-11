@@ -1,11 +1,15 @@
 const express = require('express');
+require('dotenv').config();
 const useMiddleware = require('./middleware/common.middleware');
 const useRoutes = require('./routes/routes');
+const User = require('./models/user.model');
+
 
 
 
 //Main app.
 const app = express();
+
 
 //use Common Middlewares...
 useMiddleware(app);
@@ -16,7 +20,7 @@ useRoutes(app);
 
 
 //use Basic route..
-app.use('/',(req,res)=>{
+app.get('/',(req,res)=>{
     try{
         return res.status(200).json({
             success:true,
@@ -35,7 +39,19 @@ app.use('/',(req,res)=>{
 
 
 
+//Connect DB
+require('./config/db');
 
-app.listen(3333,()=>{console.log(
-    "your app is running on port 3333"
-)})
+
+
+
+const port = process.env.PORT || 3000;
+app.listen(port, async()=>{
+    console.log(`your app is running on http://localhost:${port}`);
+    try{
+        await User.createTable();
+        console.log('Table created')
+    }catch(err){
+        console.log('error during creating table', err);
+    }
+})
