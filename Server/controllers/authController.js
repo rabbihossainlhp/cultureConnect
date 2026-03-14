@@ -21,7 +21,16 @@ const loginController = async(req,res) =>{
 
 const registerController = async(req,res) =>{
     try{
+
+        if(!req.body || typeof req.body !=='object'){
+            return res.status(400).json({
+                success:false,
+                message:'Invalid json body'
+            });
+        }
+
         const {username,email,password,country,nativeLanguage} = req.body;
+        console.log(req.body)
 
         if(!username || !email || !password || !country || !nativeLanguage){
             return res.status(400).json({
@@ -67,7 +76,9 @@ const registerController = async(req,res) =>{
     }catch(err){
         return res.status(500).json({
             success:false,
-            message:'Server error happend!! during regiseter'
+            message:`Server error happend!! during regiseter `,
+            error:err
+
         });
     }
 }

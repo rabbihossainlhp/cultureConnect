@@ -1,9 +1,5 @@
 //dependencies...
-console.log('loading routes.js')
-
 const authRouter = require('./auth.routes');
-
-console.log("auth route", authRouter)
 
 
 const routesWithPaths = [
