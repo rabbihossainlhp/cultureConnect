@@ -1,21 +1,75 @@
 //dependencies....
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 
 
 
 const loginController = async(req,res) =>{
+    
     try{
-        const {email,password} = req.body;
+        const {email,password} = req.body; 
+        
+        if(!email || !password){
+            return res.status(400).json({
+                success:false,
+                message:'Must provide necessary credentials!'
+            })
+        }
+        
+        
+        const loginQuery = `
+            SELECT username,email,password,country FROM users WHERE email=$1;
+        `;
+
+        const result = await db.query(loginQuery,[email]);
+
+        if(result.rows.length === 0){
+            return res.status(404).json({
+                success:false,
+                message:'User not found',
+            })
+        }
+
+        const matchPassword = await bcrypt.compare(password,result.rows[0].password);
+
+        if(!matchPassword){
+            return res.status(401).json({
+                success:false,
+                message:"Invalid credentials!"
+            })
+        }
+
+        const token = jwt.sign(
+            {
+            username:result.rows[0].username,
+            email:result.rows[0].email
+            },
+            process.env.JWT_SECRET,
+            {expiresIn:'1d'}
+        );
+
+        
+
+        return res.status(200).json({
+            success:true,
+            message:"user login successfully",
+            token,
+            data: { username: result.rows[0].username, email: result.rows[0].email, country: result.rows[0].country }
+        })
+
 
     }catch(err){
+        console.log(err.message)
         return res.status(500).json({
             success:false,
             message:'Server error happend!! during login'
         })
     }
 }
+
+
 
 
 
@@ -30,8 +84,8 @@ const registerController = async(req,res) =>{
         }
 
         const {username,email,password,country,nativeLanguage} = req.body;
-        console.log(req.body)
 
+        
         if(!username || !email || !password || !country || !nativeLanguage){
             return res.status(400).json({
                 success:false,
@@ -82,6 +136,8 @@ const registerController = async(req,res) =>{
         });
     }
 }
+
+
 
 
 
