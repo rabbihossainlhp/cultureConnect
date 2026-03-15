@@ -1,53 +1,41 @@
-  import { createBrowserRouter } from "react-router";
-import RootLayOut from "../rootLayOut/RootLayOut";
-import Home from "../pages/Home";
-import NotFound from "../pages/NotFound";
-import MainDeshboard from "../pages/Deshboard/MainDeshboard/MainDeshboard";
-import HomeDeshboard from "../pages/Deshboard/HomeDeshoboard/HomeDeshboard";
+
 import Community from "../pages/Deshboard/Community";
- 
+import UserDashBoard from "../pages/Deshboard/UserDashBoard/UserDashBoard";
+import { createBrowserRouter } from "react-router";
+import RootLayOut from "../Layout/RootLayOut";
+import DashboardLayout from "../Layout/DashboardLayout";
+import Home from "../pages/Home";
+import Signup from "../components/auth/Signup";
+import Login from "../components/auth/Login";
+
+
+
+
+const publicRoutes = [
+  {index:true, Component:Home},
+  {path:"community",Component:Community},
+  {path:"/signup",Component:Signup},
+  {path:"/login",Component:Login},
+]
+
+
+const dashboardRoutes = [
+  {index:true, Component:UserDashBoard},
+]
+
+
 const router = createBrowserRouter([
   {
-    path: "/",
+    path:"/",
     Component:RootLayOut,
-    children:[ {
-      index:true,
-      Component:Home
-    },
-
-    {
-      path:"community",
-      Component:Community
-    }
-    ]
+    children:publicRoutes
   },
 
-
-
-    //main desh board
   {
-    path: "/maindeshboard",
-    element: (
-          <MainDeshboard></MainDeshboard>
-    ),
-    children: [
-      {
-        index:true,
-        Component: HomeDeshboard,
-      },
-      {
-        path:'homedeshboard',
-        Component: HomeDeshboard,
-      }
-
-    ],
-  },
-
-
-  {
-    path:'/*',
-    Component:NotFound
+    path:"/dashboard",
+    Component:DashboardLayout,
+    children:dashboardRoutes
   }
-]);
+])
 
-export default router
+export default router;
