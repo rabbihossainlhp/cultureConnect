@@ -47,7 +47,7 @@ function CommunityActivity() {
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Community Activity</h2>
 
       {/* Main Container Card */}
-      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-4xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-col">
           {activityData.map((item, index) => (
             <div 
