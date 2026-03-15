@@ -7,7 +7,7 @@ import SuggestedMissions from "../SuggestedMissions/SuggestedMissions"
 
  
  
-function HomeDeshboard() {
+function UserDashBoard() {
   return (
     <div>
       <Navbar></Navbar>
@@ -37,4 +37,4 @@ function HomeDeshboard() {
   )
 }
 
-export default HomeDeshboard
+export default UserDashBoard
