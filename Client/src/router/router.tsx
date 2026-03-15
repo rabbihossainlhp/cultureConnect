@@ -1,12 +1,14 @@
 
 import Community from "../pages/Deshboard/Community";
 import UserDashBoard from "../pages/Deshboard/UserDashBoard/UserDashBoard";
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import RootLayOut from "../Layout/RootLayOut";
 import DashboardLayout from "../Layout/DashboardLayout";
 import Home from "../pages/Home";
-import Signup from "../components/auth/Signup";
+import Auth from "../pages/Auth";
 import Login from "../components/auth/Login";
+import Signup from "../components/auth/Signup";
+import NotFound from "../pages/NotFound";
 
 
 
@@ -14,8 +16,15 @@ import Login from "../components/auth/Login";
 const publicRoutes = [
   {index:true, Component:Home},
   {path:"community",Component:Community},
-  {path:"/signup",Component:Signup},
-  {path:"/login",Component:Login},
+  {
+    path:"/auth",
+    Component:Auth,
+    children:[
+      {index:true, element:<Navigate to="login" replace/>},
+      {path:"login", Component:Login},
+      {path:"signup", Component:Signup}
+    ]
+  },
 ]
 
 
@@ -35,6 +44,11 @@ const router = createBrowserRouter([
     path:"/dashboard",
     Component:DashboardLayout,
     children:dashboardRoutes
+  },
+
+  {
+    path:"*",
+    Component:NotFound
   }
 ])
 
