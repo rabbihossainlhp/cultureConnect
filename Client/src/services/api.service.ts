@@ -1,30 +1,10 @@
+import type { LoginPayload, LoginResponse, SignupResponse, SingupPayload } from "../constants/interface";
 
 const Base_api_url = import.meta.env.VITE_API_URI;
 
 
-export interface SingupPayload{
-    username:string;
-    email:string;
-    country:string;
-    nativeLanguage:string;
-    password:string;
-}
-
-
-export interface SignupResponse{
-    success:boolean;
-    message:string;
-    data?:{
-        id:number;
-        email:string;
-        username:string;
-        country:string;
-        native_language:string;
-        created_at:string;
-    }
-}
-
-const signupApiHandler = async(payload:SingupPayload): Promise<SignupResponse> =>{
+//api handler for signup
+export const signupApiHandler = async(payload:SingupPayload): Promise<SignupResponse> =>{
     const res = await fetch(`${Base_api_url}/auth/register`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -34,10 +14,32 @@ const signupApiHandler = async(payload:SingupPayload): Promise<SignupResponse> =
     const data = (await res.json()) as SignupResponse;
 
     if(!res.ok){
-        console.log(res.json());
+        throw new Error(data.message || "Signup failed!..");
     };
 
     return data;
 }
 
-export default signupApiHandler;
+
+
+
+///api handler for login 
+export const loginApiHandler = async(payload:LoginPayload):Promise<LoginResponse> =>{
+    const res = await fetch(`${Base_api_url}/auth/login`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload),
+    });
+
+    const data = (await res.json()) as LoginResponse;
+
+    if(!res.ok){
+        throw new Error(data.message || "Login failed!");
+    };
+
+    return data;
+}
+
+
+
+

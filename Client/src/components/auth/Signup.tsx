@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import {motion,AnimatePresence} from "framer-motion";
 import { Eye, EyeOff, Globe, Globe2, Languages, Lock, Mail, UserRound , X} from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import signupApiHandler from "../../services/api.service";
+import {signupApiHandler} from "../../services/api.service";
+import type { ToastState } from "../../types";
 
 
 const countries = [
@@ -32,12 +33,6 @@ const nativeLanguages = [
 ];
 
 
-type ToastState = {
-  type: "error" | "success";
-  message:string;
-};
-
-
 
 export default function Signup() {
   const [username, setUsername] = useState("");
@@ -46,13 +41,25 @@ export default function Signup() {
   const [nativeLanguage, setNativeLanguage] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
   const [toast,setToast] = useState<ToastState | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
 
   const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if(!username || !email || !password || !nativeLanguage || !country){
+      setToast({type:"error", message:"Please fill in the all fieleds"});
+      return;
+    }
+
+    if(password.length < 8 || password.length > 28){
+      setToast({type:"error", message:"Passwrod must be betweeen 8-28 charecter."});
+      return;
+    }
+
+    setIsLoading(true);
     try{
       await signupApiHandler({
         username,email,country,
@@ -68,6 +75,7 @@ export default function Signup() {
         type:"error",
         message:err instanceof Error ? err.message : "Signup Failed!"
       })
+      setIsLoading(false);
     }
   };
 
@@ -83,7 +91,7 @@ export default function Signup() {
 
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-orange-50 via-white to-pink-50 px-4 py-10 sm:px-6 lg:px-8">
+    <section className="relative min-h-screen overflow-hidden bg-linear-to-b from-orange-50 via-white to-pink-50 px-4 py-10 sm:px-6 lg:px-8">
       
       <div className="fixed right-4 top-4 z-50 w-[min(92vw,360px)]">
         <AnimatePresence>
@@ -96,8 +104,8 @@ export default function Signup() {
               transition={{ duration: 0.22 }}
               className={`rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-md ${
                 toast.type === "error"
-                  ? "border-rose-300 bg-gradient-to-r from-rose-50 to-orange-50 text-rose-800"
-                  : "border-emerald-300 bg-gradient-to-r from-emerald-50 to-lime-50 text-emerald-800"
+                  ? "border-rose-300 bg-linear-to-r from-rose-50 to-orange-50 text-rose-800"
+                  : "border-emerald-300 bg-linear-to-r from-emerald-50 to-lime-50 text-emerald-800"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -262,9 +270,9 @@ export default function Signup() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
+              className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
             >
-              Create Account
+              {isLoading? "Creating Account....":"Create Account"}
             </button>
           </form>
 

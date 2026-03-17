@@ -1,5 +1,5 @@
 
-import Community from "../pages/Deshboard/Community";
+import Community from "../pages/Community";
 import UserDashBoard from "../pages/Deshboard/UserDashBoard/UserDashBoard";
 import { createBrowserRouter, Navigate } from "react-router";
 import RootLayOut from "../Layout/RootLayOut";
