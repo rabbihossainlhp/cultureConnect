@@ -1,128 +1,229 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Globe, Video, BookOpen, Users, Bell, ChevronDown } from 'lucide-react';
-import { NavLink, Navigate } from 'react-router';
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Bell, BookOpen, ChevronDown, Globe, Menu, Users, Video } from "lucide-react";
+import { NavLink, useLocation } from "react-router";
+
+const navItemBase =
+  "font-medium transition-colors flex items-center gap-2 px-3 py-2 rounded-lg";
+const navItemInactive = "text-gray-700 hover:text-orange-500 hover:bg-orange-50";
+const navItemActive = "text-orange-600 bg-orange-50";
 
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLearnOpen, setIsLearnOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const learnMenuRef = useRef<HTMLLIElement | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
+    const onScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!learnMenuRef.current) return;
+      if (!learnMenuRef.current.contains(event.target as Node)) {
+        setIsLearnOpen(false);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsLearnOpen(false);
+        setIsMobileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onEsc);
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onEsc);
     };
   }, []);
 
-  return (
-    <div className={`navbar    fixed top-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-md shadow-sm'
-    }`}>
-      
-      <div className="navbar-start">
-        <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
-            </svg>
-          </div>
-          
-          <ul className="menu menu-sm dropdown-content bg-white rounded-box z-50 mt-3 w-64 p-4 shadow-xl border">
-            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Globe size={18} /> Explore Cultures</a></li>
-            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Video size={18} /> Live Rooms</a></li>
-            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><BookOpen size={18} /> Missions</a></li>
-            <li><a className="flex items-center gap-3 py-3 text-gray-700 hover:text-orange-500"><Users size={18} />
-            <NavLink to={"/community"}></NavLink>
-             Community</a></li>
-          </ul>
-        </div>
-        
-        <NavLink to={"/"}>
 
-<a className="btn btn-ghost text-2xl font-bold flex items-center gap-2 hover:bg-transparent">
-          <div className="w-10 h-10 bg-linear-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-            <Globe className="text-white" size={24} />
+  const closeMenus = () => {
+  setIsLearnOpen(false);
+  setIsMobileOpen(false);
+};
+
+   
+  return (
+    <header
+      className={`navbar fixed top-0 left-0 right-0 z-50 px-3 sm:px-5 lg:px-8 transition-all duration-300 ${
+        isScrolled ? "bg-white shadow-lg" : "bg-white/95 backdrop-blur-md shadow-sm"
+      }`}
+    >
+      <div className="navbar-start">
+        <div className="dropdown lg:hidden">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            aria-label="Open menu"
+            onClick={() => setIsMobileOpen((prev) => !prev)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+
+          {isMobileOpen && (
+            <ul className="menu menu-sm dropdown-content bg-white rounded-box z-50 mt-3 w-72 p-3 shadow-xl border">
+              <li>
+                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
+                  <Globe size={18} />
+                  Explore Cultures
+                </NavLink>
+              </li>
+              <li>
+                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
+                  <Video size={18} />
+                  Live Rooms
+                </NavLink>
+              </li>
+              <li>
+                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
+                  <BookOpen size={18} />
+                  Missions
+                </NavLink>
+              </li>
+              <li>
+                <NavLink onClick={closeMenus}
+                  to="/community"
+                  className={({ isActive }) =>
+                    `${navItemBase} ${isActive ? navItemActive : navItemInactive}`
+                  }
+                >
+                  <Users size={18} />
+                  Community
+                </NavLink>
+              </li>
+              <li className="mt-1">
+                <NavLink onClick={closeMenus} to="/auth/login" className="btn btn-ghost justify-start">
+                  Sign In
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </div>
+
+        <NavLink  onClick={closeMenus}
+          to="/"
+          className="btn btn-ghost text-lg sm:text-xl lg:text-2xl font-bold flex items-center gap-2 hover:bg-transparent"
+        >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-linear-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
+            <Globe className="text-white" size={22} />
           </div>
           <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
             CultureConnect
           </span>
-        </a>
-
         </NavLink>
       </div>
 
       <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1 gap-2">
+        <ul className="menu menu-horizontal px-1 gap-1">
           <li>
-            <a className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
+            <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
               <Globe size={18} />
-              Explore Cultures
-            </a>
+              Explore
+            </NavLink>
           </li>
-          
           <li>
-            <a className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
+            <NavLink  onClick={closeMenus}to="/" className={`${navItemBase} ${navItemInactive}`}>
               <Video size={18} />
               Live Rooms
-            </a>
+            </NavLink>
           </li>
 
-          <li>
-            <details>
-              <summary className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
-                <BookOpen size={18} />
-                Learn
-                <ChevronDown size={16} />
-              </summary>
-              <ul className="p-3 bg-white shadow-xl rounded-box w-56 border mt-2">
-                <li><a className="flex items-center gap-3 py-2 text-gray-700 hover:text-orange-500">🎯 Cultural Missions</a></li>
-                <li><a className="flex items-center gap-3 py-2 text-gray-700 hover:text-orange-500">📚 Language Courses</a></li>
-                <li><a className="flex items-center gap-3 py-2 text-gray-700 hover:text-orange-500">🏆 Achievements</a></li>
+          <li ref={learnMenuRef} className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isLearnOpen}
+              onClick={() => setIsLearnOpen((prev) => !prev)}
+              className={`${navItemBase} ${navItemInactive} select-none`}
+            >
+              <BookOpen size={18} />
+              Learn
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${isLearnOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isLearnOpen && (
+              <ul
+                role="menu"
+                className="absolute left-0 top-full mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl z-50"
+              >
+                <li>
+                  <NavLink onClick={closeMenus}
+                    to="/learn/missions"
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                  >
+                    Cultural Missions
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink onClick={closeMenus}
+                    to="/learn/languages"
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                  >
+                    Language Courses
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink onClick={closeMenus}
+                    to="/learn/achievements"
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                  >
+                    Achievements
+                  </NavLink>
+                </li>
               </ul>
-            </details>
+            )}
           </li>
 
           <li>
-               <NavLink to={"/community"}>
-            <a className="font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-2">
+            <NavLink onClick={closeMenus}
+              to="/community"
+              className={({ isActive }) =>
+                `${navItemBase} ${isActive ? navItemActive : navItemInactive}`
+              }
+            >
               <Users size={18} />
-               
               Community
-            </a>
-               </NavLink>
+            </NavLink>
           </li>
         </ul>
       </div>
 
-      <div className="navbar-end gap-3">
-        <button className="btn btn-ghost btn-circle relative">
-          <Bell size={22} className="text-gray-700" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full"></span>
+      <div className="navbar-end gap-2 sm:gap-3">
+        <button className="btn btn-ghost btn-circle relative" aria-label="Notifications">
+          <Bell size={20} className="text-gray-700" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full" />
         </button>
 
-        <NavLink to={"/auth/login"}>
-        <button  className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex">
+        <NavLink onClick={closeMenus}
+          to="/auth/login"
+          className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
+        >
           Sign In
-        </button>
         </NavLink>
 
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
           className="btn bg-linear-to-r from-orange-500 to-pink-500 text-white border-none hover:shadow-lg hover:shadow-orange-500/30 font-semibold"
         >
-          Get Started Free
+          Get Started
         </motion.button>
       </div>
-    </div>
+    </header>
   );
 }
 
