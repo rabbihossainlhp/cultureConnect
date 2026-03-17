@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 const User = {
     tableName : 'users',
-    async createTable() {
+    async createUserTable() {
         const query = `
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
