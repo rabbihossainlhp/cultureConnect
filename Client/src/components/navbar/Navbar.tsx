@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Video, BookOpen, Users, Bell, ChevronDown } from 'lucide-react';
-import { NavLink } from 'react-router';
+import { NavLink, Navigate } from 'react-router';
 
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -108,9 +108,11 @@ function Navbar() {
           <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full"></span>
         </button>
 
-        <button className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex">
+        <NavLink to={"/auth/login"}>
+        <button  className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex">
           Sign In
         </button>
+        </NavLink>
 
         <motion.button
           whileHover={{ scale: 1.05 }}
