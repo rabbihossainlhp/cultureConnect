@@ -9,6 +9,7 @@ import Auth from "../pages/Auth";
 import Login from "../components/auth/Login";
 import Signup from "../components/auth/Signup";
 import NotFound from "../pages/NotFound";
+import Explore from "../pages/Explore";
 
 
 
@@ -16,15 +17,17 @@ import NotFound from "../pages/NotFound";
 const publicRoutes = [
   {index:true, Component:Home},
   {path:"community",Component:Community},
+  {path:"explore",Component:Explore},
   {
     path:"/auth",
     Component:Auth,
     children:[
       {index:true, element:<Navigate to="login" replace/>},
       {path:"login", Component:Login},
-      {path:"signup", Component:Signup}
+      {path:"signup", Component:Signup},
     ]
   },
+  
 ]
 
 
