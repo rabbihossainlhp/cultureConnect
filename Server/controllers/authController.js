@@ -50,12 +50,20 @@ const loginController = async(req,res) =>{
             {expiresIn:'1d'}
         );
 
+
+        const isProd = process.env.NODE_ENV==='production';
+        const cookieOptions = {
+            httpOnly:true,
+            secure:isProd,
+            sameSite:isProd?"none":"lax",
+            maxAge:24*60*60 *1000,
+        }
         
+        res.cookie("access_token",token,cookieOptions);
 
         return res.status(200).json({
             success:true,
             message:"user login successfully",
-            token,
             data: { username: result.rows[0].username, email: result.rows[0].email, country: result.rows[0].country }
         })
 
@@ -128,6 +136,7 @@ const registerController = async(req,res) =>{
 
 
     }catch(err){
+        console.log(err)
         return res.status(500).json({
             success:false,
             message:`Server error happend!! during regiseter `,

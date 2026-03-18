@@ -49,7 +49,7 @@ const port = process.env.PORT || 3000;
 app.listen(port, async()=>{
     console.log(`your app is running on http://localhost:${port}`);
     try{
-        await User.createTable();
+        await User.createUserTable();
         console.log('Table created')
     }catch(err){
         console.log('error during creating table', err);
