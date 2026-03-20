@@ -43,7 +43,13 @@ export const loginApiHandler = async(payload:LoginPayload):Promise<LoginResponse
 
 
 
-
+//logout api handler 
+export const logoutApiHandler = async ():Promise<void> =>{
+    await fetch (`${Base_api_url}/auth/logout`,{
+        method:"POST",
+        credentials:"include",
+    });
+}
 
 
 //own / me api handler...
