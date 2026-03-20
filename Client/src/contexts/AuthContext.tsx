@@ -2,7 +2,7 @@ import {createContext,useContext,useEffect,useMemo,useState} from 'react';
 import { meApiHandler } from '../services/api.service';
 
 
-type User = {username:string; email:string; country:string; nativeLanguage:string};
+type User = {username:string; email:string; country:string;};
 
 
 type AuthContextType = {
