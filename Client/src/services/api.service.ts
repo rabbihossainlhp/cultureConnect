@@ -1,4 +1,4 @@
-import type { LoginPayload, LoginResponse, SignupResponse, SingupPayload } from "../constants/interface";
+import type { LoginPayload, LoginResponse, MeResponse, SignupResponse, SingupPayload } from "../constants/interface";
 
 const Base_api_url = import.meta.env.VITE_API_URI;
 
@@ -27,6 +27,7 @@ export const signupApiHandler = async(payload:SingupPayload): Promise<SignupResp
 export const loginApiHandler = async(payload:LoginPayload):Promise<LoginResponse> =>{
     const res = await fetch(`${Base_api_url}/auth/login`,{
         method:"POST",
+        credentials:"include",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(payload),
     });
@@ -43,3 +44,19 @@ export const loginApiHandler = async(payload:LoginPayload):Promise<LoginResponse
 
 
 
+
+
+//own / me api handler...
+export const meApiHandler = async():Promise<MeResponse> =>{
+    const res = await fetch(`${Base_api_url}/profile`, {
+        method:"GET",
+        credentials:"include",
+    });
+
+    if(!res.ok){
+        if(res.status === 401) return {success:false, message:'UnAuthorized'};
+        throw new Error("Session check failed");
+    }
+
+    return (await res.json()) as MeResponse;
+}

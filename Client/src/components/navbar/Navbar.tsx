@@ -1,7 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, BookOpen, ChevronDown, Globe, Menu, Users, Video } from "lucide-react";
-import { NavLink, useLocation } from "react-router";
+import {
+  Bell,
+  BookOpen,
+  ChevronDown,
+  Globe,
+  LayoutDashboard,
+  LogIn,
+  Menu,
+  UserCircle2,
+  UserPlus,
+  Users,
+  Video,
+} from "lucide-react";
+import { NavLink } from "react-router";
+import { useAuth } from "../../contexts/AuthContext";
 
 const navItemBase =
   "font-medium transition-colors flex items-center gap-2 px-3 py-2 rounded-lg";
@@ -13,6 +26,8 @@ function Navbar() {
   const [isLearnOpen, setIsLearnOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const learnMenuRef = useRef<HTMLLIElement | null>(null);
+
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 30);
@@ -44,13 +59,11 @@ function Navbar() {
     };
   }, []);
 
-
   const closeMenus = () => {
-  setIsLearnOpen(false);
-  setIsMobileOpen(false);
-};
+    setIsLearnOpen(false);
+    setIsMobileOpen(false);
+  };
 
-   
   return (
     <header
       className={`navbar fixed top-0 left-0 right-0 z-50 px-3 sm:px-5 lg:px-8 transition-all duration-300 ${
@@ -87,32 +100,54 @@ function Navbar() {
                 </NavLink>
               </li>
               <li>
-                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
-                  <BookOpen size={18} />
-                  Missions
-                </NavLink>
-              </li>
-              <li>
-                <NavLink onClick={closeMenus}
-                  to="/community"
-                  className={({ isActive }) =>
-                    `${navItemBase} ${isActive ? navItemActive : navItemInactive}`
-                  }
-                >
+                <NavLink onClick={closeMenus} to="/community" className={`${navItemBase} ${navItemInactive}`}>
                   <Users size={18} />
                   Community
                 </NavLink>
               </li>
-              <li className="mt-1">
-                <NavLink onClick={closeMenus} to="/auth/login" className="btn btn-ghost justify-start">
-                  Sign In
-                </NavLink>
-              </li>
+
+              {!isLoading && !isAuthenticated && (
+                <>
+                  <li className="mt-1">
+                    <NavLink onClick={closeMenus} to="/auth/login" className="btn btn-ghost justify-start">
+                      <LogIn size={16} />
+                      Sign In
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      onClick={closeMenus}
+                      to="/auth/signup"
+                      className="btn bg-linear-to-r from-orange-500 to-pink-500 text-white border-none justify-start"
+                    >
+                      <UserPlus size={16} />
+                      Get Started
+                    </NavLink>
+                  </li>
+                </>
+              )}
+
+              {!isLoading && isAuthenticated && (
+                <>
+                  <li className="mt-1">
+                    <NavLink onClick={closeMenus} to="/dashboard" className="btn btn-ghost justify-start">
+                      <LayoutDashboard size={16} />
+                      Dashboard
+                    </NavLink>
+                  </li>
+                  <li>
+                    <span className="px-3 py-2 text-sm text-gray-600">
+                      Signed in as <strong>{user?.username}</strong>
+                    </span>
+                  </li>
+                </>
+              )}
             </ul>
           )}
         </div>
 
-        <NavLink  onClick={closeMenus}
+        <NavLink
+          onClick={closeMenus}
           to="/"
           className="btn btn-ghost text-lg sm:text-xl lg:text-2xl font-bold flex items-center gap-2 hover:bg-transparent"
         >
@@ -138,7 +173,7 @@ function Navbar() {
             </NavLink>
           </li>
           <li>
-            <NavLink  onClick={closeMenus}to="/" className={`${navItemBase} ${navItemInactive}`}>
+            <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
               <Video size={18} />
               Live Rooms
             </NavLink>
@@ -161,12 +196,10 @@ function Navbar() {
             </button>
 
             {isLearnOpen && (
-              <ul
-                role="menu"
-                className="absolute left-0 top-full mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl z-50"
-              >
+              <ul role="menu" className="absolute left-0 top-full mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl z-50">
                 <li>
-                  <NavLink onClick={closeMenus}
+                  <NavLink
+                    onClick={closeMenus}
                     to="/learn/missions"
                     role="menuitem"
                     className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
@@ -175,7 +208,8 @@ function Navbar() {
                   </NavLink>
                 </li>
                 <li>
-                  <NavLink onClick={closeMenus}
+                  <NavLink
+                    onClick={closeMenus}
                     to="/learn/languages"
                     role="menuitem"
                     className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
@@ -183,25 +217,15 @@ function Navbar() {
                     Language Courses
                   </NavLink>
                 </li>
-                <li>
-                  <NavLink onClick={closeMenus}
-                    to="/learn/achievements"
-                    role="menuitem"
-                    className="block rounded-lg px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                  >
-                    Achievements
-                  </NavLink>
-                </li>
               </ul>
             )}
           </li>
 
           <li>
-            <NavLink onClick={closeMenus}
+            <NavLink
+              onClick={closeMenus}
               to="/community"
-              className={({ isActive }) =>
-                `${navItemBase} ${isActive ? navItemActive : navItemInactive}`
-              }
+              className={({ isActive }) => `${navItemBase} ${isActive ? navItemActive : navItemInactive}`}
             >
               <Users size={18} />
               Community
@@ -211,25 +235,52 @@ function Navbar() {
       </div>
 
       <div className="navbar-end gap-2 sm:gap-3">
-        <button className="btn btn-ghost btn-circle relative" aria-label="Notifications">
-          <Bell size={20} className="text-gray-700" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full" />
-        </button>
+        {isAuthenticated && (
+          <button className="btn btn-ghost btn-circle relative" aria-label="Notifications">
+            <Bell size={20} className="text-gray-700" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full" />
+          </button>
+        )}
 
-        <NavLink onClick={closeMenus}
-          to="/auth/login"
-          className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
-        >
-          Sign In
-        </NavLink>
+        {!isLoading && !isAuthenticated && (
+          <>
+            <NavLink
+              onClick={closeMenus}
+              to="/auth/login"
+              className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
+            >
+              Sign In
+            </NavLink>
 
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          className="btn bg-linear-to-r from-orange-500 to-pink-500 text-white border-none hover:shadow-lg hover:shadow-orange-500/30 font-semibold"
-        >
-          Get Started
-        </motion.button>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+              <NavLink
+                onClick={closeMenus}
+                to="/auth/signup"
+                className="btn bg-linear-to-r from-orange-500 to-pink-500 text-white border-none hover:shadow-lg hover:shadow-orange-500/30 font-semibold"
+              >
+                Get Started
+              </NavLink>
+            </motion.div>
+          </>
+        )}
+
+        {!isLoading && isAuthenticated && (
+          <>
+            <NavLink
+              onClick={closeMenus}
+              to="/dashboard"
+              className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
+            >
+              <LayoutDashboard size={18} />
+              Dashboard
+            </NavLink>
+
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 text-orange-700">
+              <UserCircle2 size={18} />
+              <span className="text-sm font-semibold">{user?.username}</span>
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

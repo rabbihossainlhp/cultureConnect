@@ -31,10 +31,18 @@ export interface LoginPayload{
 export interface LoginResponse{
     success:boolean,
     message:string;
-    token:string;
     data?:{
         username:string;
         email:string;
         country:string;
     }
+}
+
+
+
+
+export interface MeResponse{
+    success:boolean;
+    data?:{username:string,email:string; country:string};
+    message:string;
 }
