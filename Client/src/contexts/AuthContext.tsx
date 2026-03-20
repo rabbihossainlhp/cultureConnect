@@ -1,5 +1,5 @@
 import {createContext,useContext,useEffect,useMemo,useState} from 'react';
-import { meApiHandler } from '../services/api.service';
+import { meApiHandler,logoutApiHandler } from '../services/api.service';
 
 
 type User = {username:string; email:string; country:string;};
@@ -10,6 +10,7 @@ type AuthContextType = {
     isAuthenticated:boolean;
     isLoading:boolean;
     refreshAuth: ()=>Promise<void>;
+    logout:()=>Promise<void>;
 };
 
 
@@ -36,12 +37,22 @@ export function AuthProvider ({children}:{children:React.ReactNode}){
         }
     };
 
+
+
+    const logout = async() =>{
+        try{
+            await logoutApiHandler();
+        }finally{
+            setUser(null);
+        }
+    }
+
     useEffect(()=>{
         void refreshAuth();
     },[]);
 
     const value = useMemo(()=>({
-        user,isAuthenticated: !!user, isLoading, refreshAuth
+        user,isAuthenticated: !!user, isLoading, refreshAuth, logout
     }), [user,isLoading]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

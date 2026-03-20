@@ -7,13 +7,14 @@ import {
   Globe,
   LayoutDashboard,
   LogIn,
+  LogOut,
   Menu,
   UserCircle2,
   UserPlus,
   Users,
   Video,
 } from "lucide-react";
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
 
 const navItemBase =
@@ -25,9 +26,13 @@ function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLearnOpen, setIsLearnOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const learnMenuRef = useRef<HTMLLIElement | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const learnMenuRef = useRef<HTMLLIElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 30);
@@ -37,9 +42,14 @@ function Navbar() {
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
-      if (!learnMenuRef.current) return;
-      if (!learnMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+
+      if (learnMenuRef.current && !learnMenuRef.current.contains(target)) {
         setIsLearnOpen(false);
+      }
+
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setIsProfileOpen(false);
       }
     };
 
@@ -47,6 +57,7 @@ function Navbar() {
       if (event.key === "Escape") {
         setIsLearnOpen(false);
         setIsMobileOpen(false);
+        setIsProfileOpen(false);
       }
     };
 
@@ -62,6 +73,13 @@ function Navbar() {
   const closeMenus = () => {
     setIsLearnOpen(false);
     setIsMobileOpen(false);
+    setIsProfileOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    closeMenus();
+    navigate("/auth/login", { replace: true });
   };
 
   return (
@@ -129,16 +147,22 @@ function Navbar() {
 
               {!isLoading && isAuthenticated && (
                 <>
-                  <li className="mt-1">
+                  <li className="mt-2 px-3 py-2 bg-orange-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Signed in as</p>
+                    <p className="text-sm font-semibold text-gray-800">{user?.username}</p>
+                    <p className="text-xs text-gray-600">{user?.email}</p>
+                  </li>
+                  <li className="mt-2">
                     <NavLink onClick={closeMenus} to="/dashboard" className="btn btn-ghost justify-start">
                       <LayoutDashboard size={16} />
                       Dashboard
                     </NavLink>
                   </li>
                   <li>
-                    <span className="px-3 py-2 text-sm text-gray-600">
-                      Signed in as <strong>{user?.username}</strong>
-                    </span>
+                    <button type="button" onClick={handleLogout} className="btn btn-ghost justify-start text-red-600">
+                      <LogOut size={16} />
+                      Logout
+                    </button>
                   </li>
                 </>
               )}
@@ -265,21 +289,50 @@ function Navbar() {
         )}
 
         {!isLoading && isAuthenticated && (
-          <>
-            <NavLink
-              onClick={closeMenus}
-              to="/dashboard"
-              className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
+          <div ref={profileMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen((prev) => !prev)}
+              className="btn btn-ghost gap-2 normal-case"
+              aria-haspopup="menu"
+              aria-expanded={isProfileOpen}
             >
-              <LayoutDashboard size={18} />
-              Dashboard
-            </NavLink>
+              <UserCircle2 size={20} />
+              <span className="hidden sm:inline">{user?.username}</span>
+              <ChevronDown size={16} className={`transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+            </button>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 text-orange-700">
-              <UserCircle2 size={18} />
-              <span className="text-sm font-semibold">{user?.username}</span>
-            </div>
-          </>
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-72 rounded-xl border bg-white p-3 shadow-xl z-50">
+                <div className="rounded-lg bg-orange-50 p-3">
+                  <p className="text-xs text-gray-500">Signed in as</p>
+                  <p className="text-sm font-semibold text-gray-800">{user?.username}</p>
+                  <p className="text-xs text-gray-600">{user?.email}</p>
+                  <p className="text-xs text-gray-600 mt-1">{user?.country}</p>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  <NavLink
+                    onClick={closeMenus}
+                    to="/dashboard"
+                    className="btn btn-ghost justify-start"
+                  >
+                    <LayoutDashboard size={16} />
+                    Dashboard
+                  </NavLink>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="btn btn-ghost justify-start text-red-600"
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </header>
