@@ -1,5 +1,6 @@
 //dependencies...
 const authRouter = require('./auth.routes');
+const profileRouter = require('./profile.router');
 
 
 const routesWithPaths = [
@@ -8,6 +9,10 @@ const routesWithPaths = [
         handler: authRouter
     },
 
+    {
+        path:"/api/profile",
+        handler:profileRouter
+    }
 ]
 
 
