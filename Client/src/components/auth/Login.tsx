@@ -34,7 +34,7 @@ export default function Login() {
     setIsLoading(true);
     try{
       const res = await loginApiHandler({email,password});
-      navigate("/")
+      navigate("/dashboard")
 
       console.log(res)
     }catch(err){
