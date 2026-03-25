@@ -4,18 +4,19 @@ import UserDashBoard from "../pages/Deshboard/UserDashBoard/UserDashBoard";
 import { createBrowserRouter, Navigate } from "react-router";
 import RootLayOut from "../Layout/RootLayOut";
 import DashboardLayout from "../Layout/DashboardLayout";
-import Home from "../pages/Home";
 import Auth from "../pages/Auth";
 import Login from "../components/auth/Login";
 import Signup from "../components/auth/Signup";
 import NotFound from "../pages/NotFound";
 import Explore from "../pages/Explore";
+import HomeGate from "./HomeGate";
+import ProtectedRoute from "./ProtectedRoute";
 
 
 
 
 const publicRoutes = [
-  {index:true, Component:Home},
+  {index:true, Component:HomeGate},
   {path:"community",Component:Community},
   {path:"explore",Component:Explore},
   {
@@ -45,7 +46,7 @@ const router = createBrowserRouter([
 
   {
     path:"/dashboard",
-    Component:DashboardLayout,
+    element:<ProtectedRoute> <DashboardLayout/></ProtectedRoute>,
     children:dashboardRoutes
   },
 
