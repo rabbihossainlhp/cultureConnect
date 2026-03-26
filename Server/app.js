@@ -1,10 +1,11 @@
 const express = require('express');
 const {Server} = require('socket.io');
-const http = require('http');
+const {createServer} = require('http');
 require('dotenv').config();
 const useMiddleware = require('./middleware/common.middleware');
 const useRoutes = require('./routes/routes');
 const User = require('./models/user.model');
+const handleSocketEvents = require('./socket/socketHandler');
 
 
 
@@ -45,10 +46,27 @@ app.get('/',(req,res)=>{
 require('./config/db');
 
 
+const server = createServer(app);
+const io = new Server(server,{
+    cors:{
+        origin:['http://localhost:5173'],
+        credentials:true,
+    },
+});
+
+io.on('connection',(socket)=>{
+    console.log("Socket connected:", socket.id);
+
+    handleSocketEvents(io,socket);
+})
+
+
+app.set('io',io);
+
 
 
 const port = process.env.PORT || 3000;
-app.listen(port, async()=>{
+server.listen(port, async()=>{
     console.log(`your app is running on http://localhost:${port}`);
     try{
         await User.createUserTable();
