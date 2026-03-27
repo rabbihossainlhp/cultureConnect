@@ -46,3 +46,29 @@ export interface MeResponse{
     data?:{username:string,email:string; country:string};
     message:string;
 }
+
+
+
+
+
+
+//realtiem type:
+export interface Message {
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface RoomUser {
+  userId: string;
+  username: string;
+  country: string;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  language: string;
+  members: number;
+}

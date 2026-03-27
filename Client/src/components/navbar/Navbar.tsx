@@ -112,7 +112,7 @@ function Navbar() {
                 </NavLink>
               </li>
               <li>
-                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
+                <NavLink onClick={closeMenus} to="/live-rooms" className={`${navItemBase} ${navItemInactive}`}>
                   <Video size={18} />
                   Live Rooms
                 </NavLink>
@@ -197,7 +197,7 @@ function Navbar() {
             </NavLink>
           </li>
           <li>
-            <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
+            <NavLink onClick={closeMenus} to="/live-rooms" className={`${navItemBase} ${navItemInactive}`}>
               <Video size={18} />
               Live Rooms
             </NavLink>

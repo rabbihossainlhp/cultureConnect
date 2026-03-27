@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import {io} from "socket.io-client";
 import {
   ArrowRight,
   CalendarDays,
@@ -14,6 +16,8 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { useAuth } from "../../../contexts/AuthContext";
+
+
 
 const statCards = [
   { title: "Cultural Streak", value: "12 Days", icon: Flame, tone: "from-orange-500 to-rose-500" },
@@ -47,6 +51,49 @@ const highlights = [
 
 function UserDashBoard() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    const socket = io('http://localhost:4713/',{
+      withCredentials:true,
+    });
+
+
+    socket.on('room:room-joined',(data)=>{
+        console.log('Joined: ', data.message);
+      });
+
+      socket.on('room:user_left',(userData)=>{
+        console.log(`${userData.username} left the room`);
+      });
+
+      socket.on('chat:new', (messageData)=>{
+        console.log(`${messageData.username}: ${messageData.text}`)
+      });
+
+
+    socket.on('connect',()=>{
+      console.log('Client socket connected: ', socket.id);
+      socket.emit('room:join','room-1',{
+        userId:user?.email,
+        username:user?.username,
+        country:user?.country,
+      });
+
+      
+    });
+    socket.on('disconnect',(reason)=>{
+      console.log('Client socket disconnected: ', socket.id, reason);
+    });
+
+    return ()=>{
+      socket.emit('room:leave','room-1',{
+        userId:user?.email,
+        username:user?.username
+      })
+      socket.disconnect();
+    }
+
+  },[])
 
   return (
     <section className="min-h-screen bg-linear-to-b from-amber-50 via-white to-orange-50 px-3 pb-8 pt-22 sm:px-6 sm:pb-10 sm:pt-24 lg:px-8">
