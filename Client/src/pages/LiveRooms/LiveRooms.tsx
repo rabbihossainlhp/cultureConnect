@@ -4,8 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Send, Users } from "lucide-react";
 import type { Message, RoomUser } from "../../constants/interface";
 
-// ===== HARDCODED ROOMS (No backend API needed) =====
-// Line 10: These are our test rooms - later we'll get from /api/rooms
+
 const HARDCODED_ROOMS = [
   { id: "room-1", name: "🇯🇵 Japan Culture Hub", language: "Japanese", members: 0 },
   { id: "room-2", name: "🇸🇵 Spanish Learners", language: "Spanish", members: 0 },
@@ -14,17 +13,11 @@ const HARDCODED_ROOMS = [
   { id: "room-5", name: "🌍 Global Explorers", language: "English", members: 0 },
 ];
 
-// ===== TYPE DEFINITIONS =====
-// Line 24: Define shape of our data so TypeScript helps us
-
 
 function LiveRooms() {
   const { user } = useAuth();
 
-  // ===== STATE MANAGEMENT =====
-  // Line 49: What data do we need to track?
 
-  // Selected room (which room user is currently viewing/in)
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(HARDCODED_ROOMS[0]?.id || null);
 
   // Messages in current room
@@ -54,7 +47,7 @@ function LiveRooms() {
 
     // Line 81: When socket connects successfully
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
+      console.log(" Socket connected:", newSocket.id);
       setIsConnected(true);
 
       // Line 86: Join the default room (room-1)
@@ -69,7 +62,7 @@ function LiveRooms() {
 
     // Line 95: When we successfully join a room
     newSocket.on("room:joined", (data) => {
-      console.log("✅ Joined:", data.message);
+      console.log(" Joined:", data.message);
       // Line 98: Clear messages when switching rooms
       setMessages([]);
       setRoomUsers([]);
@@ -77,7 +70,7 @@ function LiveRooms() {
 
     // Line 102: When ANOTHER user joins our current room (broadcast)
     newSocket.on("room:user_joined", (userData: RoomUser) => {
-      console.log(`👤 ${userData.username} joined!`);
+      console.log(` ${userData.username} joined!`);
       
       // Line 106: Add this user to our roomUsers list
       setRoomUsers((prev) => {
@@ -90,7 +83,7 @@ function LiveRooms() {
 
     // Line 114: When a user leaves the room
     newSocket.on("room:user_left", (userData: RoomUser) => {
-      console.log(`👋 ${userData.username} left!`);
+      console.log(` ${userData.username} left!`);
       
       // Line 118: Remove them from roomUsers list
       setRoomUsers((prev) => prev.filter((u) => u.userId !== userData.userId));
@@ -98,7 +91,7 @@ function LiveRooms() {
 
     // Line 122: When a new message arrives in the room
     newSocket.on("chat:new", (messageData: Message) => {
-      console.log(`💬 ${messageData.username}: ${messageData.text}`);
+      console.log(` ${messageData.username}: ${messageData.text}`);
       
       // Line 126: Add message to our messages list
       setMessages((prev) => [...prev, messageData]);
@@ -106,7 +99,7 @@ function LiveRooms() {
 
     // Line 130: When socket disconnects
     newSocket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", reason);
+      console.log(" Socket disconnected:", reason);
       setIsConnected(false);
     });
 
@@ -225,7 +218,7 @@ function LiveRooms() {
           {messages.length === 0 ? (
             // Line 251: Empty state
             <div className="flex items-center justify-center h-full text-slate-400">
-              <p>No messages yet. Say hello! 👋</p>
+              <p>No messages yet. Say hello! </p>
             </div>
           ) : (
             // Line 256: Show all messages
