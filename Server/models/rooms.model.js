@@ -13,10 +13,10 @@ const Rooms = {
                 language VARCHAR(50),
                 visibility VARCHAR(20) NOT NULL DEFAULT 'public',
                 status VARCHAR(20) NOT NULL DEFAULT 'active',
-                host_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASECADE,
-                max_capacity INTEGER NOT NOULL DEFAULT 100,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMPS,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMPS,
+                host_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                max_capacity INTEGER NOT NULL DEFAULT 100,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(status);

@@ -7,12 +7,12 @@ const RoomMessage = {
         const query = `
             CREATE TABLE IF NOT EXISTS room_message (
                 id BIGSERIAL PRIMARY KEY,
-                room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASECADE,
-                sender_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASECADE,
+                room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                sender_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 message_text TEXT NOT NULL,
                 message_type VARCHAR(25) NOT NULL DEFAULT 'text',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                edited_at TIMESTAMP N,created_at DESCULL,
+                edited_at TIMESTAMP NULL,
                 deleted_at TIMESTAMP NULL
             );
 

@@ -6,6 +6,9 @@ const useMiddleware = require('./middleware/common.middleware');
 const useRoutes = require('./routes/routes');
 const User = require('./models/user.model');
 const handleSocketEvents = require('./socket/socketHandler');
+const Rooms = require('./models/rooms.model');
+const RoomMessage = require('./models/room-message.model');
+const RoomParticipants = require('./models/room-participants.model');
 
 
 
@@ -70,8 +73,12 @@ server.listen(port, async()=>{
     console.log(`your app is running on http://localhost:${port}`);
     try{
         await User.createUserTable();
+        await Rooms.createRoomsTable();
+        await RoomMessage.createRoomMessageTable();
+        await RoomParticipants.createRoomParticipantsTable();
         console.log('Table created')
     }catch(err){
         console.log('error during creating table', err);
+        throw err;
     }
 })

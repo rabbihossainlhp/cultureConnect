@@ -8,8 +8,8 @@ const RoomParticipants = {
         const query = ` 
             CREATE TABLE IF NOT EXISTS room_participants (
                 id BIGSERIAL PRIMARY KEY,
-                room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASECADE,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASECADE,
+                room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 role VARCHAR(20) NOT NULL DEFAULT 'member',
                 is_online BOOLEAN NOT NULL  DEFAULT true,
                 joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,7 +18,7 @@ const RoomParticipants = {
             );
 
             CREATE INDEX IF NOT EXISTS idx_room_participants_room_id ON room_participants(room_id);
-            CREATE INDEX IF NOT EXISTS idx_room_participants_user_id ON room_particapants(user_id);
+            CREATE INDEX IF NOT EXISTS idx_room_participants_user_id ON room_participants(user_id);
             CREATE INDEX IF NOT EXISTS idx_room_participants_online ON room_participants(is_online);
         `;
 
