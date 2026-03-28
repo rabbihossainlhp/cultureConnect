@@ -1,300 +1,404 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { Plus, Send, Users, Wifi, WifiOff, Trash2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { Send, Users } from "lucide-react";
 import type { Message, RoomUser } from "../../constants/interface";
+import type { RoomJoinedPayload, UiRoom } from "../../types";
 
+const ROOMS_STORAGE_KEY = "cc_live_rooms_v1";
 
-const HARDCODED_ROOMS = [
-  { id: "room-1", name: "🇯🇵 Japan Culture Hub", language: "Japanese", members: 0 },
-  { id: "room-2", name: "🇸🇵 Spanish Learners", language: "Spanish", members: 0 },
-  { id: "room-3", name: "🇮🇳 Indian Traditions", language: "Hindi", members: 0 },
-  { id: "room-4", name: "🇫🇷 Paris International", language: "French", members: 0 },
-  { id: "room-5", name: "🌍 Global Explorers", language: "English", members: 0 },
-];
+const readRooms = (): UiRoom[] => {
+  try {
+    const raw = localStorage.getItem(ROOMS_STORAGE_KEY);
+    if (!raw) return [];
 
+    const parsed = JSON.parse(raw) as UiRoom[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed;
+  } catch {
+    return [];
+  }
+};
+
+const saveRooms = (rooms: UiRoom[]) => {
+  localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(rooms));
+};
+
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 function LiveRooms() {
   const { user } = useAuth();
 
+  const [rooms, setRooms] = useState<UiRoom[]>(() => readRooms());
+  const [selectedUiRoomId, setSelectedUiRoomId] = useState<string | null>(() => {
+    const initialRooms = readRooms();
+    return initialRooms[0]?.id || null;
+  });
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(HARDCODED_ROOMS[0]?.id || null);
-
-  // Messages in current room
   const [messages, setMessages] = useState<Message[]>([]);
-
-  // Users currently in the room
   const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
-
-  // Input field value
   const [messageInput, setMessageInput] = useState("");
 
-  // Are we connected to socket server?
   const [isConnected, setIsConnected] = useState(false);
+  const [socketError, setSocketError] = useState("");
 
-  // Socket connection instance (useRef to avoid setState cascading)
+  const [showCreate, setShowCreate] = useState(false);
+  const [newRoomId, setNewRoomId] = useState("");
+  const [newRoomName, setNewRoomName] = useState("");
+  const [newLanguage, setNewLanguage] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
   const socketRef = useRef<Socket | null>(null);
+  const selectedRoomIdRef = useRef<number | null>(null);
 
-  // ===== SOCKET.IO SETUP =====
-  // Line 72: This runs once on component mount
+  const selectedRoom = useMemo(
+    () => rooms.find((room) => room.id === selectedUiRoomId) || null,
+    [rooms, selectedUiRoomId]
+  );
+
   useEffect(() => {
-    // Line 75: Create socket connection
-    const newSocket = io("http://localhost:4713/", {
+    saveRooms(rooms);
+  }, [rooms]);
+
+  useEffect(() => {
+    const socket = io("http://localhost:4713/", {
       withCredentials: true,
     });
 
-    // ===== CONNECTION LISTENERS =====
-
-    // Line 81: When socket connects successfully
-    newSocket.on("connect", () => {
-      console.log(" Socket connected:", newSocket.id);
+    socket.on("connect", () => {
       setIsConnected(true);
+      setSocketError("");
 
-      // Line 86: Join the default room (room-1)
-      if (selectedRoomId) {
-        newSocket.emit("room:join", selectedRoomId, {
-          userId: user?.email,
-          username: user?.username,
-          country: user?.country,
-        });
+      if (selectedRoomIdRef.current) {
+        socket.emit("room:join", { roomId: selectedRoomIdRef.current });
       }
     });
 
-    // Line 95: When we successfully join a room
-    newSocket.on("room:joined", (data) => {
-      console.log(" Joined:", data.message);
-      // Line 98: Clear messages when switching rooms
-      setMessages([]);
-      setRoomUsers([]);
-    });
-
-    // Line 102: When ANOTHER user joins our current room (broadcast)
-    newSocket.on("room:user_joined", (userData: RoomUser) => {
-      console.log(` ${userData.username} joined!`);
-      
-      // Line 106: Add this user to our roomUsers list
-      setRoomUsers((prev) => {
-        // Line 108: Don't add duplicate if they're already there
-        const exists = prev.find((u) => u.userId === userData.userId);
-        if (exists) return prev;
-        return [...prev, userData];
-      });
-    });
-
-    // Line 114: When a user leaves the room
-    newSocket.on("room:user_left", (userData: RoomUser) => {
-      console.log(` ${userData.username} left!`);
-      
-      // Line 118: Remove them from roomUsers list
-      setRoomUsers((prev) => prev.filter((u) => u.userId !== userData.userId));
-    });
-
-    // Line 122: When a new message arrives in the room
-    newSocket.on("chat:new", (messageData: Message) => {
-      console.log(` ${messageData.username}: ${messageData.text}`);
-      
-      // Line 126: Add message to our messages list
-      setMessages((prev) => [...prev, messageData]);
-    });
-
-    // Line 130: When socket disconnects
-    newSocket.on("disconnect", (reason) => {
-      console.log(" Socket disconnected:", reason);
+    socket.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    // Line 135: Save socket to ref (not state, to avoid cascading renders)
-    socketRef.current = newSocket;
-
-    // Line 138: Cleanup when component unmounts
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [user]); // Re-run if user object changes
-
-  // ===== ROOM CHANGE HANDLER =====
-  // Line 145: When user clicks a different room
-  const handleRoomChange = (roomId: string) => {
-    const socket = socketRef.current;
-    // Line 148: Leave current room first
-    if (selectedRoomId && socket) {
-      socket.emit("room:leave", selectedRoomId, {
-        userId: user?.email,
-        username: user?.username,
-      });
-    }
-
-    // Line 155: Update selected room
-    setSelectedRoomId(roomId);
-
-    // Line 158: Join the new room
-    if (socket) {
-      socket.emit("room:join", roomId, {
-        userId: user?.email,
-        username: user?.username,
-        country: user?.country,
-      });
-    }
-  };
-
-  // ===== MESSAGE SEND HANDLER =====
-  // Line 169: When user types and clicks send
-  const handleSendMessage = () => {
-    const socket = socketRef.current;
-    // Line 172: Check message isn't empty
-    if (!messageInput.trim() || !socket || !selectedRoomId) return;
-
-    // Line 175: Send message to backend
-    socket.emit("chat:send", selectedRoomId, {
-      userId: user?.email,
-      username: user?.username,
-      text: messageInput,
-      timestamp: new Date().toISOString(),
+    socket.on("socket:error", (payload: { code?: string; message?: string }) => {
+      setSocketError(payload?.message || "Socket error");
     });
 
-    // Line 182: Clear input field
+    socket.on("room:joined", (payload: RoomJoinedPayload) => {
+      setSocketError("");
+      setRoomUsers(payload.users || []);
+      setMessages(payload.messages || []);
+    });
+
+    socket.on("room:user_joined", (joinedUser: RoomUser) => {
+      setRoomUsers((prev) => {
+        const exists = prev.some(
+          (item) => String(item.userId) === String(joinedUser.userId)
+        );
+
+        if (exists) return prev;
+        return [...prev, joinedUser];
+      });
+    });
+
+    socket.on("room:user_left", (leftUser: RoomUser) => {
+      setRoomUsers((prev) =>
+        prev.filter((item) => String(item.userId) !== String(leftUser.userId))
+      );
+    });
+
+    socket.on("chat:new", (message: Message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const nextRoomId = selectedRoom?.roomId ?? null;
+    const prevRoomId = selectedRoomIdRef.current;
+
+    if (prevRoomId && prevRoomId !== nextRoomId) {
+      socket.emit("room:leave", { roomId: prevRoomId });
+    }
+
+    if (nextRoomId) {
+      selectedRoomIdRef.current = nextRoomId;
+      if (socket.connected) {
+        socket.emit("room:join", { roomId: nextRoomId });
+      }
+      return;
+    }
+
+    selectedRoomIdRef.current = null;
+  }, [selectedRoom?.roomId]);
+
+  const resetRoomUi = () => {
+    setMessages([]);
+    setRoomUsers([]);
+    setSocketError("");
+  };
+
+  const selectRoomCard = (roomCardId: string | null) => {
+    setSelectedUiRoomId(roomCardId);
+    resetRoomUi();
+  };
+
+  const createRoomCard = () => {
+    const roomIdNum = Number(newRoomId);
+
+    if (!Number.isInteger(roomIdNum) || roomIdNum <= 0) {
+      setSocketError("Room ID must be a positive number from backend rooms table.");
+      return;
+    }
+
+    if (!newRoomName.trim()) {
+      setSocketError("Room name is required.");
+      return;
+    }
+
+    const created: UiRoom = {
+      id: makeId(),
+      roomId: roomIdNum,
+      name: newRoomName.trim(),
+      language: newLanguage.trim() || "Unknown",
+      description: newDescription.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setRooms((prev) => [created, ...prev]);
+    selectRoomCard(created.id);
+
+    setShowCreate(false);
+    setNewRoomId("");
+    setNewRoomName("");
+    setNewLanguage("");
+    setNewDescription("");
+  };
+
+  const removeRoomCard = (roomCardId: string) => {
+    setRooms((prev) => {
+      const next = prev.filter((item) => item.id !== roomCardId);
+
+      if (selectedUiRoomId === roomCardId) {
+        selectRoomCard(next[0]?.id || null);
+      }
+
+      return next;
+    });
+  };
+
+  const sendMessage = () => {
+    const socket = socketRef.current;
+    const roomId = selectedRoom?.roomId;
+    const text = messageInput.trim();
+
+    if (!socket || !socket.connected || !roomId || !text) return;
+
+    socket.emit("chat:send", {
+      roomId,
+      text,
+    });
+
     setMessageInput("");
   };
 
-  // ===== JSX: THE UI =====
   return (
-    <section className="flex h-[calc(100vh-88px)] bg-slate-50">
-      {/* ===== LEFT SIDEBAR: ROOM LIST ===== */}
-      {/* Line 190: Rooms list column */}
-      <aside className="w-full sm:w-64 border-r border-slate-200 bg-white flex flex-col overflow-hidden">
-        {/* Line 193: Header */}
-        <div className="p-4 border-b border-slate-100">
-          <h2 className="font-bold text-slate-800">Live Rooms</h2>
-          <p className="text-xs text-slate-500 mt-1">
-            {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-          </p>
-        </div>
-
-        {/* Line 201: Rooms list */}
-        <div className="flex-1 overflow-y-auto">
-          {HARDCODED_ROOMS.map((room) => (
-            <button
-              // Line 206: Click handler to switch rooms
-              onClick={() => handleRoomChange(room.id)}
-              // Line 208: Highlight selected room
-              className={`w-full text-left px-4 py-3 border-l-4 transition ${
-                selectedRoomId === room.id
-                  ? "border-orange-500 bg-orange-50"
-                  : "border-transparent hover:bg-slate-50"
-              }`}
-              key={room.id}
-            >
-              {/* Room name and icon */}
-              <p className="font-semibold text-sm text-slate-800">{room.name}</p>
-              
-              {/* Room language and member count */}
-              <p className="text-xs text-slate-500 mt-1">
-                {room.language} • {roomUsers.length} online
-              </p>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* ===== RIGHT COLUMN: CHAT AREA ===== */}
-      {/* Line 232: Main chat content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* LINE 234: HEADER WITH ROOM INFO */}
-        {selectedRoomId && (
-          <div className="p-4 border-b border-slate-200 bg-white">
-            <h1 className="font-bold text-lg text-slate-800">
-              {HARDCODED_ROOMS.find((r) => r.id === selectedRoomId)?.name}
-            </h1>
-            {/* Line 241: Show users count */}
-            <p className="text-sm text-slate-600 mt-1">
-              {roomUsers.length} people online
-            </p>
-          </div>
-        )}
-
-        {/* LINE 247: MESSAGES AREA */}
-        {/* Line 248: Scrollable message list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 ? (
-            // Line 251: Empty state
-            <div className="flex items-center justify-center h-full text-slate-400">
-              <p>No messages yet. Say hello! </p>
-            </div>
-          ) : (
-            // Line 256: Show all messages
-            messages.map((msg, idx) => (
-              <div key={idx} className="flex flex-col">
-                {/* Username and time */}
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-slate-800">
-                    {msg.username}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-                
-                {/* Message text */}
-                <p className="text-sm text-slate-700 mt-1 bg-white rounded-lg p-3 inline-block max-w-xs">
-                  {msg.text}
+    <section className="min-h-[calc(100vh-88px)] bg-[radial-gradient(circle_at_10%_10%,#fef3c7_0%,transparent_40%),radial-gradient(circle_at_80%_0%,#bfdbfe_0%,transparent_35%),#f8fafc]">
+      <div className="mx-auto max-w-7xl p-4 md:p-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
+          <aside className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-extrabold tracking-tight text-slate-800">Live Rooms</h2>
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                  {isConnected ? "Connected" : "Disconnected"}
                 </p>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* LINE 279: USERS SECTION */}
-        {/* Line 280: Show who's in this room */}
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 max-h-32 overflow-y-auto">
-          <p className="text-xs font-semibold text-slate-600 mb-2">
-            <Users className="inline h-3 w-3 mr-1" />
-            People Online ({roomUsers.length})
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {roomUsers.map((roomUser) => (
-              <span
-                key={roomUser.userId}
-                className="text-xs bg-white px-2 py-1 rounded-full border border-slate-200"
+              <button
+                onClick={() => setShowCreate((prev) => !prev)}
+                className="inline-flex items-center gap-1 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition"
               >
-                {roomUser.username} 🌍 {roomUser.country}
-              </span>
-            ))}
-          </div>
-        </div>
+                <Plus size={14} />
+                Add
+              </button>
+            </div>
 
-        {/* LINE 299: MESSAGE INPUT AREA */}
-        {/* Line 300: Send message form */}
-        <div className="p-4 border-t border-slate-200 bg-white">
-          <div className="flex gap-2">
-            {/* Text input */}
-            <input
-              // Line 305: Update state as user types
-              onChange={(e) => setMessageInput(e.target.value)}
-              // Line 307: Value from state
-              value={messageInput}
-              // Line 309: Send when pressing Enter
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              // Line 311: Placeholder text
-              placeholder="Type a message..."
-              // Line 313: Styling
-              className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-            />
+            {showCreate && (
+              <div className="p-4 border-b border-slate-100 bg-amber-50/60 space-y-2">
+                <input
+                  value={newRoomId}
+                  onChange={(e) => setNewRoomId(e.target.value)}
+                  placeholder="Backend Room ID (number)"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <input
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
+                  placeholder="Display Name"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <input
+                  value={newLanguage}
+                  onChange={(e) => setNewLanguage(e.target.value)}
+                  placeholder="Language"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Description"
+                  rows={2}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={createRoomCard}
+                  className="w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition"
+                >
+                  Create Room Card
+                </button>
+              </div>
+            )}
 
-            {/* Send button */}
-            <button
-              // Line 319: Click handler
-              onClick={handleSendMessage}
-              // Line 321: Disabled when not connected
-              disabled={!isConnected}
-              // Line 323: Styling with disabled state
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-            >
-              <Send className="h-4 w-4" />
-              <span className="hidden sm:inline">Send</span>
-            </button>
-          </div>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {rooms.length === 0 && (
+                <p className="p-4 text-sm text-slate-500">
+                  No room cards yet. Click Add and enter a backend room id.
+                </p>
+              )}
+
+              {rooms.map((room) => {
+                const active = room.id === selectedUiRoomId;
+
+                return (
+                  <div
+                    key={room.id}
+                    className={`group border-l-4 ${
+                      active
+                        ? "border-orange-500 bg-orange-50"
+                        : "border-transparent hover:bg-slate-50"
+                    }`}
+                  >
+                    <button
+                      onClick={() => selectRoomCard(room.id)}
+                      className="w-full px-4 py-3 text-left"
+                    >
+                      <p className="font-semibold text-sm text-slate-800">{room.name}</p>
+                      <p className="text-xs text-slate-500 mt-1">ID {room.roomId} • {room.language}</p>
+                    </button>
+
+                    <div className="px-4 pb-3">
+                      <button
+                        onClick={() => removeRoomCard(room.id)}
+                        className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-red-600"
+                      >
+                        <Trash2 size={12} />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+
+          <main className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[70vh]">
+            <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-sky-50">
+              <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-800">
+                {selectedRoom ? selectedRoom.name : "Select a room"}
+              </h1>
+              <p className="text-sm text-slate-600 mt-1">
+                {selectedRoom
+                  ? `Backend Room ID: ${selectedRoom.roomId} • ${roomUsers.length} online`
+                  : "Create or choose a room card to connect"}
+              </p>
+              {socketError && (
+                <p className="mt-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                  {socketError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+              {messages.length === 0 ? (
+                <div className="h-full min-h-[240px] grid place-items-center text-slate-400 text-sm">
+                  No messages yet
+                </div>
+              ) : (
+                messages.map((msg, index) => {
+                  const mine =
+                    String(msg.userId) === String(user?.email) || msg.username === user?.username;
+
+                  return (
+                    <div
+                      key={`${msg.timestamp}-${index}`}
+                      className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
+                          mine ? "bg-slate-900 text-white" : "bg-white text-slate-800"
+                        }`}
+                      >
+                        <p className="text-xs opacity-70 mb-1">{msg.username}</p>
+                        <p className="text-sm">{msg.text}</p>
+                        <p className="text-[10px] opacity-60 mt-1">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="px-4 py-3 border-t border-slate-100 bg-white">
+              <p className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1">
+                <Users size={14} />
+                Online ({roomUsers.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {roomUsers.map((roomUser) => (
+                  <span
+                    key={`${roomUser.userId}-${roomUser.username}`}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
+                  >
+                    {roomUser.username} • {roomUser.country}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-white">
+              <div className="flex gap-2">
+                <input
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") sendMessage();
+                  }}
+                  placeholder="Type your message..."
+                  className="flex-1 rounded-xl border border-slate-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!isConnected || !selectedRoom}
+                  className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send size={16} />
+                  Send
+                </button>
+              </div>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

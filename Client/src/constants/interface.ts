@@ -72,3 +72,21 @@ export interface Room {
   language: string;
   members: number;
 }
+
+
+
+
+export interface Message {
+  id?: number;
+  roomId?: number;
+  userId: string | number;
+  username: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface RoomUser {
+  userId: string | number;
+  username: string;
+  country: string;
+}

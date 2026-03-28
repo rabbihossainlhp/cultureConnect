@@ -1,6 +1,7 @@
 //dependencies...
 const authRouter = require('./auth.routes');
-const profileRouter = require('./profile.router');
+const profileRouter = require('./profile.routes');
+const roomRouter = require('./room.routes');
 
 
 const routesWithPaths = [
@@ -11,7 +12,12 @@ const routesWithPaths = [
 
     {
         path:"/api/profile",
-        handler:profileRouter
+        handler: profileRouter
+    },
+
+    {
+        path:"/api/room",
+        handler: roomRouter
     }
 ]
 

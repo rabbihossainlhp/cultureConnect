@@ -32,18 +32,18 @@ const ensureActiveRoom = async (roomId) =>{
 const fetchOnlineUsers = async(roomId)=>{
     const usersQuery = `
         SELECT 
-        u.id AS "useriD",
+        u.id AS "userId",
         u.username,
         u.country
 
-        FROM room_participants rp JOIN users n ON u.id = rp.user_id
+        FROM room_participants rp JOIN users u ON u.id = rp.user_id
         WHERE rp.room_id = $1
         AND rp.is_online = true
         ORDER BY u.username ASC
     `;
 
     const usersResult = await db.query(usersQuery,[roomId]);
-    return usersResult.rows[0];
+    return usersResult.rows;
 };
 
 
@@ -66,13 +66,14 @@ const fetchRecentMessages = async(roomId) =>{
     `;
 
     const result = await db.query(messageQuery,[roomId]);
+    return result.rows.reverse();
 };
 
 
 const setParticipantsOnline = async (roomId,userId) =>{
     const onlineUserQuery = `
         INSERT INTO room_participants (room_id,user_id,role,is_online,joined_at,left_at)
-        VALUES ($1,$2, 'memeber, true, CURRENT_TIMESTAMP,NULL)
+        VALUES ($1,$2, 'member', true, CURRENT_TIMESTAMP,NULL)
         ON CONFLICT (room_id, user_id)
         DO UPDATE SET 
             is_online = true,
@@ -103,7 +104,7 @@ const isParticipantsOnline = async(roomId,userId) =>{
         FROM room_participants
         WHERE room_id = $1
         AND user_id = $2
-        AND is_online = true,
+        AND is_online = true
         LIMIT 1
     `;
 
@@ -122,6 +123,7 @@ const handleSocketEvents = (io,socket) =>{
 
     const user = socket.data.user;
 
+
     if(!user){
         socket.emit('socket:error',{code:'UNAUTHORIZED',message:'user context missing..'});
         socket.disconnect(true);
@@ -131,8 +133,13 @@ const handleSocketEvents = (io,socket) =>{
     socket.on('room:join', async(payload)=>{
         try{
             const roomId = normalizedRoomId(payload?.roomId ?? payload);
+            const room = await ensureActiveRoom(roomId);
+
             if(!roomId){
-                return socket.emit('socket:error:',{code:'INVALID ROOM', message:'invalid room id'});
+                return socket.emit('socket:error',{code:'INVALID ROOM', message:'invalid room id'});
+            }
+            if(!room){
+                return socket.emit('socket:error',{code:'INACTIVE ROOM', message:'Inactive room not able to receive user'});
             }
 
 
@@ -148,7 +155,7 @@ const handleSocketEvents = (io,socket) =>{
             socket.emit('room:joined',{
                 room,
                 users:onlineUsers,
-                message: recentMessages, 
+                messages: recentMessages, 
             });
 
             socket.to(String(roomId)).emit('room:user_joined',{
@@ -236,11 +243,11 @@ const handleSocketEvents = (io,socket) =>{
                 id:saved.id,
                 roomId:saved.roomId,
                 userId:user.id,
-                username: saved.username,
+                username: user.username,
                 text: saved.text,
                 timestamp:saved.timestamp
             });
-            console.log(`message sent in room ${roomId}: ${messageData.text.substring(0,35)}...`);
+            console.log(`message sent in room ${roomId}: ${text.substring(0,35)}...`);
         }catch(err){
             console.error('caht:send error:' ,err.message);
             socket.emit('socket:error', {code:'SEND_FAILED', message:'Faild to send message in the room'});
@@ -258,10 +265,10 @@ const handleSocketEvents = (io,socket) =>{
 
                 await setParticipantsOffline(roomId, user.id);
                 
-                socket.to(String(roomId).emit('room:user_left',{
+                socket.to(String(roomId)).emit('room:user_left',{
                     userId: user.id,
                     username:user.username,
-                }));
+                });
             }
 
             console.log('Socket disconnected:', socket.id, reason);
