@@ -8,7 +8,7 @@ const RoomMessage = {
             CREATE TABLE IF NOT EXISTS room_message (
                 id BIGSERIAL PRIMARY KEY,
                 room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-                sender_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                sender_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 message_text TEXT NOT NULL,
                 message_type VARCHAR(25) NOT NULL DEFAULT 'text',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

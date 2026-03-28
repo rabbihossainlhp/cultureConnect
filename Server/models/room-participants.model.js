@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 
 const RoomParticipants = {
-    tableName:'room_particaipants',
+    tableName:'room_participants',
     async createRoomParticipantsTable (){
 
         const query = ` 
