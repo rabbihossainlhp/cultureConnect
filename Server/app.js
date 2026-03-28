@@ -3,6 +3,7 @@ const {Server} = require('socket.io');
 const {createServer} = require('http');
 require('dotenv').config();
 const useMiddleware = require('./middleware/common.middleware');
+const socketAuthMiddleware  = require('./middleware/socketAuth.middleware');
 const useRoutes = require('./routes/routes');
 const User = require('./models/user.model');
 const handleSocketEvents = require('./socket/socketHandler');
@@ -57,6 +58,8 @@ const io = new Server(server,{
     },
 });
 
+io.use(socketAuthMiddleware);
+
 io.on('connection',(socket)=>{
     console.log("Socket connected:", socket.id);
 
@@ -78,7 +81,7 @@ server.listen(port, async()=>{
         await RoomParticipants.createRoomParticipantsTable();
         console.log('Table created')
     }catch(err){
-        console.log('error during creating table', err);
-        throw err;
+        console.error('error during creating table', err);
+        console.error(err.stack);
     }
 })
