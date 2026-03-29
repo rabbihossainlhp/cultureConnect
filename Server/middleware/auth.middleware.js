@@ -7,7 +7,7 @@ const authMiddleware = async (req,res,next) =>{
     try{
         const token = req.cookies['access_token'];
         const decoded =  jwt.verify(token,process.env.JWT_SECRET);
-        const query = `SELECT username,email,country FROM users WHERE email=$1`;
+        const query = `SELECT id,username,email,country FROM users WHERE email=$1`;
 
         const user = await db.query(query,[decoded.email]);
         if(user.rows.length === 0){

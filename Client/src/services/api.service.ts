@@ -1,4 +1,13 @@
-import type { LoginPayload, LoginResponse, MeResponse, SignupResponse, SingupPayload } from "../constants/interface";
+import type {
+    CreateRoomPayload,
+    CreateRoomResponse,
+    LoginPayload,
+    LoginResponse,
+    MeResponse,
+    RoomListResponse,
+    SignupResponse,
+    SingupPayload,
+} from "../constants/interface";
 
 const Base_api_url = import.meta.env.VITE_API_URI;
 
@@ -66,3 +75,41 @@ export const meApiHandler = async():Promise<MeResponse> =>{
 
     return (await res.json()) as MeResponse;
 }
+
+
+// create room api handler
+export const createRoomApiHandler = async(
+    payload: CreateRoomPayload
+): Promise<CreateRoomResponse> => {
+    const res = await fetch(`${Base_api_url}/room/create-room`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+
+    const data = (await res.json()) as CreateRoomResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Create room failed");
+    }
+
+    return data;
+};
+
+
+// room list api handler
+export const getRoomListApiHandler = async(): Promise<RoomListResponse> => {
+    const res = await fetch(`${Base_api_url}/room/room-list`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    const data = (await res.json()) as RoomListResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Fetch room list failed");
+    }
+
+    return data;
+};

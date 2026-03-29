@@ -52,23 +52,63 @@ export interface MeResponse{
 
 
 
-//realtiem type:
+export interface Room {
+  id: string;
+  name: string;
+  language: string;
+  members: number;
+}
+
+
+
+
 export interface Message {
-  userId: string;
+  id?: number;
+  roomId?: number;
+  userId: string | number;
   username: string;
   text: string;
   timestamp: string;
 }
 
 export interface RoomUser {
-  userId: string;
+  userId: string | number;
   username: string;
   country: string;
 }
 
-export interface Room {
-  id: string;
-  name: string;
+export interface CreateRoomPayload {
+  slug: string;
+  roomName: string;
   language: string;
-  members: number;
+  visibility: "public" | "private";
+  capacity: number;
+}
+
+export interface CreateRoomResponse {
+  success: boolean;
+  message: string;
+  room?: {
+    id: number;
+    name: string;
+    slug: string;
+    language: string;
+    visibility: "public" | "private";
+    capacity: number;
+  };
+}
+
+export interface RoomListItem {
+  id: number;
+  name: string;
+  description: string | null;
+  language: string;
+  status: string;
+  visibility: "public" | "private";
+}
+
+export interface RoomListResponse {
+  success: boolean;
+  message: string;
+  data?: RoomListItem[];
 }

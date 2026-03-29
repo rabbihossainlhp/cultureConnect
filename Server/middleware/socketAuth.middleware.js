@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const socketAuthMiddleware = async (socket,next) =>{
     try{
         const cookie = socket.handshake.headers.cookie;
-        console.log("PRINTING WHOLE SOCKET",socket);
+        // console.log("PRINTING WHOLE SOCKET",socket);
 
         if(!cookie){
             return next(new Error('No authentication token provided'));
