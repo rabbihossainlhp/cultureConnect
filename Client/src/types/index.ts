@@ -30,6 +30,9 @@ export type UiRoom = {
   roomId: number;
   name: string;
   language: string;
+  slug?: string;
+  visibility?: "public" | "private";
+  capacity?: number;
   description?: string;
   createdAt: string;
 };

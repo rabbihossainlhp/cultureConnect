@@ -7,7 +7,7 @@ const socketAuthMiddleware  = require('./middleware/socketAuth.middleware');
 const useRoutes = require('./routes/routes');
 const User = require('./models/user.model');
 const handleSocketEvents = require('./socket/socketHandler');
-const Rooms = require('./models/rooms.model');
+const Rooms = require('./models/room.model');
 const RoomMessage = require('./models/room-message.model');
 const RoomParticipants = require('./models/room-participants.model');
 

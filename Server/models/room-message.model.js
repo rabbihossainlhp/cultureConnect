@@ -2,10 +2,10 @@ const db = require('../config/db');
 
 
 const RoomMessage = {
-    tableName:'room_message',
+    tableName:'room_messages',
     async createRoomMessageTable(){
         const query = `
-            CREATE TABLE IF NOT EXISTS room_message (
+            CREATE TABLE IF NOT EXISTS room_messages (
                 id BIGSERIAL PRIMARY KEY,
                 room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
                 sender_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -16,8 +16,8 @@ const RoomMessage = {
                 deleted_at TIMESTAMP NULL
             );
 
-            CREATE INDEX IF NOT EXISTS idx_room_messages_id_created_at ON room_message(room_id,created_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_room_messages_sender_user_id ON room_message(sender_user_id);
+            CREATE INDEX IF NOT EXISTS idx_room_messages_id_created_at ON room_messages(room_id,created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_room_messages_sender_user_id ON room_messages(sender_user_id);
             
         `;
 

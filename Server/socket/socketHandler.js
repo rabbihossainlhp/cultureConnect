@@ -57,7 +57,7 @@ const fetchRecentMessages = async(roomId) =>{
         u.id AS "userId",
         u.username
         
-        FROM room_message rm
+        FROM room_messages rm
         JOIN users u ON u.id = rm.sender_user_id
         WHERE rm.room_id = $1
         AND rm.deleted_at IS NULL
@@ -230,7 +230,7 @@ const handleSocketEvents = (io,socket) =>{
 
 
             const insertQuery = `
-                INSERT INTO room_message(room_id, sender_user_id, message_text, message_type)
+                INSERT INTO room_messages(room_id, sender_user_id, message_text, message_type)
                 VALUES($1, $2, $3, 'text')
                 RETURNING id, room_id AS "roomId", message_text AS text, created_at AS timestamp
             `;
