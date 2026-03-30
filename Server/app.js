@@ -10,6 +10,7 @@ const handleSocketEvents = require('./socket/socketHandler');
 const Rooms = require('./models/room.model');
 const RoomMessage = require('./models/room-message.model');
 const RoomParticipants = require('./models/room-participants.model');
+const CulturalPost = require('./models/cultural-post.model');
 
 
 
@@ -79,6 +80,7 @@ server.listen(port, async()=>{
         await Rooms.createRoomsTable();
         await RoomMessage.createRoomMessageTable();
         await RoomParticipants.createRoomParticipantsTable();
+        await CulturalPost.createCulturalPostTable();
         console.log('Table created')
     }catch(err){
         console.error('error during creating table', err);
