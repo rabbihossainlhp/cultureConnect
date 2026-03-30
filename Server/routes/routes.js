@@ -2,6 +2,8 @@
 const authRouter = require('./auth.routes');
 const profileRouter = require('./profile.routes');
 const roomRouter = require('./room.routes');
+const postRouter = require('./post.routes');
+
 
 
 const routesWithPaths = [
@@ -18,7 +20,12 @@ const routesWithPaths = [
     {
         path:"/api/room",
         handler: roomRouter
-    }
+    },
+
+    {
+        path:"/api/post",
+        handler: postRouter
+    },
 ]
 
 

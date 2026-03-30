@@ -5,10 +5,24 @@ const CulturalPost = {
     tableName:"Cultural-Post",
     async createCulturalPostTable() {
         const query = `
-            CREATE TABLE IF NOT EXIST cultural-post(
+            CREATE TABLE IF NOT EXISTS cultural_post(
                 id SERIAL PRIMARY KEY,
-                
+                author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR(300) NOT NULL,
+                description TEXT,
+                tags TEXT[],
+                slug VARCHAR(250),
+                post_image TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL,
+                deleted_at TIMESTAMP NULL
             )
-        `
+        `;
+
+        await db.query(query);
     }
-}
+    
+};
+
+
+module.exports = CulturalPost;
