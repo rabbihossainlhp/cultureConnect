@@ -102,11 +102,7 @@ function Navbar() {
           {isMobileOpen && (
             <ul className="menu menu-sm dropdown-content bg-white rounded-box z-50 mt-3 w-72 p-3 shadow-xl border">
               <li>
-<<<<<<< HEAD
-                <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
-=======
                 <NavLink onClick={closeMenus} to="/explore" className={`${navItemBase} ${navItemInactive}`}>
->>>>>>> dev
                   <Globe size={18} />
                   Explore Cultures
                 </NavLink>
@@ -187,11 +183,7 @@ function Navbar() {
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-1">
           <li>
-<<<<<<< HEAD
-            <NavLink onClick={closeMenus} to="/" className={`${navItemBase} ${navItemInactive}`}>
-=======
             <NavLink onClick={closeMenus} to="/explore" className={`${navItemBase} ${navItemInactive}`}>
->>>>>>> dev
               <Globe size={18} />
               Explore
             </NavLink>
