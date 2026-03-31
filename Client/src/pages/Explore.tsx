@@ -2,9 +2,11 @@
 import { BookOpenText, PencilLine, Search, Sparkles, TrendingUp, Users } from "lucide-react";
 import ExploreCard from '../components/common/ExploreCard';
 
+
+
 function Explore() {
   return (
-    <main className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-amber-50/40 via-white to-sky-50/60">
+    <main className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-amber-50/40 via-white to-sky-50/60">
       {/* Animated background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
@@ -15,7 +17,7 @@ function Explore() {
         {/* Hero Section with enhanced glass morphism and social media style */}
         <div className="relative rounded-3xl backdrop-blur-xl bg-white/80 border border-white/60 shadow-2xl p-8 sm:p-10 overflow-hidden">
           {/* Gradient accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-400 via-pink-400 to-sky-400"></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-orange-400 via-pink-400 to-sky-400"></div>
           
           <div className="relative z-10">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -32,9 +34,9 @@ function Explore() {
               </div>
             </div>
 
-            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight bg-gradient-to-r from-slate-800 via-slate-800 to-slate-600 bg-clip-text text-transparent">
+            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight bg-linear-to-r from-slate-800 via-slate-800 to-slate-600 bg-clip-text text-transparent">
               Explore Real Stories <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">From Real Cultures</span>
+              <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">From Real Cultures</span>
             </h1>
 
             <p className="mt-5 max-w-2xl text-slate-600 text-lg leading-relaxed">
@@ -43,8 +45,8 @@ function Explore() {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <button className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <button className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-r from-orange-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative flex items-center gap-2">
                   <PencilLine className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                   Write a Culture Post
