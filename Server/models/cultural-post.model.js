@@ -13,6 +13,9 @@ const CulturalPost = {
                 tags TEXT[],
                 slug VARCHAR(250),
                 post_image TEXT,
+                readtime VARCHAR(20),
+                likes INTEGER NULL DEFAULT 0,
+                comments VARCHAR(80) NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NULL,
                 deleted_at TIMESTAMP NULL
