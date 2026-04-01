@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 
 const CulturalPost = {
-    tableName:"Cultural-Post",
+    tableName:"cultural_post",
     async createCulturalPostTable() {
         const query = `
             CREATE TABLE IF NOT EXISTS cultural_post(
@@ -13,9 +13,10 @@ const CulturalPost = {
                 tags TEXT[],
                 slug VARCHAR(250),
                 post_image TEXT,
+                status VARCHAR(20) NOT NULL DEFAULT 'published',
                 readtime VARCHAR(20),
                 likes INTEGER NULL DEFAULT 0,
-                comments VARCHAR(80) NULL,
+                comments_count INTEGER NULL DEFAULT 0,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NULL,
                 deleted_at TIMESTAMP NULL
