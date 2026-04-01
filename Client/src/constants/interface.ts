@@ -112,3 +112,38 @@ export interface RoomListResponse {
   message: string;
   data?: RoomListItem[];
 }
+
+export interface CreatePostPayload {
+  title: string;
+  description: string;
+  tags: string[];
+  slug: string;
+  readtime:string;
+}
+
+export interface PostItem {
+  id: number;
+  author_id: number;
+  title: string;
+  description: string | null;
+  tags: string[] | null;
+  slug: string;
+  post_image: string | null;
+  status: string;
+  readtime: string | null;
+  likes: number;
+  comments_count: number;
+  created_at: string;
+}
+
+export interface CreatePostResponse {
+  success: boolean;
+  message: string;
+  data?: PostItem;
+}
+
+export interface PostListResponse {
+  success: boolean;
+  message: string;
+  data?: PostItem[];
+}

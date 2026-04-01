@@ -9,6 +9,7 @@ import Login from "../components/auth/Login";
 import Signup from "../components/auth/Signup";
 import NotFound from "../pages/NotFound";
 import Explore from "../pages/Explore";
+import SinglePost from "../pages/SinglePost";
 import HomeGate from "./HomeGate";
 import ProtectedRoute from "./ProtectedRoute";
 import LiveRooms from "../pages/LiveRooms/LiveRooms";
@@ -20,6 +21,7 @@ const publicRoutes = [
   {index:true, Component:HomeGate},
   {path:"community",Component:Community},
   {path:"explore",Component:Explore},
+  {path:"explore/:slug",Component:SinglePost},
   {path:"live-rooms",Component:LiveRooms},
   {
     path:"/auth",

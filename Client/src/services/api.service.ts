@@ -1,9 +1,12 @@
 import type {
+    CreatePostPayload,
+    CreatePostResponse,
     CreateRoomPayload,
     CreateRoomResponse,
     LoginPayload,
     LoginResponse,
     MeResponse,
+    PostListResponse,
     RoomListResponse,
     SignupResponse,
     SingupPayload,
@@ -109,6 +112,43 @@ export const getRoomListApiHandler = async(): Promise<RoomListResponse> => {
 
     if (!res.ok) {
         throw new Error(data.message || "Fetch room list failed");
+    }
+
+    return data;
+};
+
+
+// create post api handler
+export const createPostApiHandler = async (
+    payload: CreatePostPayload
+): Promise<CreatePostResponse> => {
+    const res = await fetch(`${Base_api_url}/post/create`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+
+    const data = (await res.json()) as CreatePostResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Create post failed");
+    }
+
+    return data;
+};
+
+
+// get post list api handler
+export const getPostListApiHandler = async (): Promise<PostListResponse> => {
+    const res = await fetch(`${Base_api_url}/post/list`, {
+        method: "GET",
+    });
+
+    const data = (await res.json()) as PostListResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Fetch posts failed");
     }
 
     return data;

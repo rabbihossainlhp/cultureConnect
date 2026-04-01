@@ -57,3 +57,10 @@ export type RoomJoinedPayload = {
 };
 
 
+
+
+
+export type Toast = {
+  type: "success" | "error";
+  message: string;
+};
