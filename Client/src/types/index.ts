@@ -1,4 +1,4 @@
-import type { Message, RoomUser } from "../constants/interface";
+import type { Message, RoomUser, DirectMessage, DmTargetUser } from "../constants/interface";
 
 export type ToastState = {
     type: "error" | "success";
@@ -63,4 +63,10 @@ export type RoomJoinedPayload = {
 export type Toast = {
   type: "success" | "error";
   message: string;
+};
+
+export type DmHistoryPayload = {
+  roomId: number;
+  target: DmTargetUser;
+  messages: DirectMessage[];
 };
