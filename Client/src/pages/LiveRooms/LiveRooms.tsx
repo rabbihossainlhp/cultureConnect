@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Plus, Send, Search, Users, Wifi, WifiOff, Hash, RefreshCcw } from "lucide-react";
+import { Plus, Send, Search, Users, Wifi, WifiOff, Hash, RefreshCcw, MessageCircle, X, MoreVertical } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { createRoomApiHandler, getRoomListApiHandler } from "../../services/api.service";
-import type { Message, RoomListItem, RoomUser } from "../../constants/interface";
-import type { RoomJoinedPayload, UiRoom } from "../../types";
+import type { DirectMessage, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
+import type { DmHistoryPayload, RoomJoinedPayload, UiRoom } from "../../types";
 
 const toSlug = (value: string) =>
   value
@@ -29,18 +29,29 @@ const mapRoomListItemToUiRoom = (room: RoomListItem): UiRoom => ({
 function LiveRooms() {
   const { user, isAuthenticated } = useAuth();
 
+  // Room state
   const [rooms, setRooms] = useState<UiRoom[]>([]);
   const [selectedUiRoomId, setSelectedUiRoomId] = useState<string | null>(null);
+  const [joinedRoomIds, setJoinedRoomIds] = useState<Set<number>>(new Set());
 
+  // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
   const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
   const [messageInput, setMessageInput] = useState("");
 
+  // DM state
+  const [chatMode, setChatMode] = useState<"room" | "dm">("room");
+  const [dmTarget, setDmTarget] = useState<DmTargetUser | null>(null);
+  const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
+  const [showUsersDropdown, setShowUsersDropdown] = useState(false);
+  const [showRoomMenu, setShowRoomMenu] = useState(false);
+
+  // Socket and UI state
   const [isConnected, setIsConnected] = useState(false);
   const [socketError, setSocketError] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Create room state
   const [showCreate, setShowCreate] = useState(false);
   const [roomName, setRoomName] = useState("");
   const [language, setLanguage] = useState("");
@@ -50,7 +61,6 @@ function LiveRooms() {
   const [loadingRooms, setLoadingRooms] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
-  const selectedRoomIdRef = useRef<number | null>(null);
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedUiRoomId) || null,
@@ -104,6 +114,7 @@ function LiveRooms() {
     void fetchRooms();
   }, [fetchRooms]);
 
+  // Socket connection and listeners
   useEffect(() => {
     const socket = io("http://localhost:4713/", {
       withCredentials: true,
@@ -112,10 +123,6 @@ function LiveRooms() {
     socket.on("connect", () => {
       setIsConnected(true);
       setSocketError("");
-
-      if (selectedRoomIdRef.current) {
-        socket.emit("room:join", { roomId: selectedRoomIdRef.current });
-      }
     });
 
     socket.on("disconnect", () => {
@@ -126,10 +133,18 @@ function LiveRooms() {
       setSocketError(payload?.message || "Socket error");
     });
 
+    // Room events
     socket.on("room:joined", (payload: RoomJoinedPayload) => {
       setSocketError("");
       setRoomUsers(payload.users || []);
       setMessages(payload.messages || []);
+      setJoinedRoomIds((prev) => {
+        const next = new Set(prev);
+        next.add(payload.room.id);
+        return next;
+      });
+      setChatMode("room");
+      setDmTarget(null);
     });
 
     socket.on("room:user_joined", (joinedUser: RoomUser) => {
@@ -147,33 +162,23 @@ function LiveRooms() {
       setMessages((prev) => [...prev, incoming]);
     });
 
+    // DM events
+    socket.on("dm:history", (payload: DmHistoryPayload) => {
+      setSocketError("");
+      setChatMode("dm");
+      setDmTarget(payload.target);
+      setDmMessages(payload.messages || []);
+    });
+
+    socket.on("dm:new", (incoming: DirectMessage) => {
+      setDmMessages((prev) => [...prev, incoming]);
+    });
+
     socketRef.current = socket;
     return () => {
       socket.disconnect();
     };
   }, []);
-
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-
-    const nextRoomId = selectedRoom?.roomId ?? null;
-    const prevRoomId = selectedRoomIdRef.current;
-
-    if (prevRoomId && prevRoomId !== nextRoomId) {
-      socket.emit("room:leave", { roomId: prevRoomId });
-    }
-
-    if (!nextRoomId) {
-      selectedRoomIdRef.current = null;
-      return;
-    }
-
-    selectedRoomIdRef.current = nextRoomId;
-    if (socket.connected) {
-      socket.emit("room:join", { roomId: nextRoomId });
-    }
-  }, [selectedRoom?.roomId]);
 
   const resetRoomUi = () => {
     setMessages([]);
@@ -181,9 +186,96 @@ function LiveRooms() {
     setSocketError("");
   };
 
-  const selectRoom = (roomCardId: string | null) => {
-    setSelectedUiRoomId(roomCardId);
+  const joinRoom = (room: UiRoom) => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) {
+      setSocketError("Socket is not connected");
+      return;
+    }
+
+    setSelectedUiRoomId(room.id);
+    setChatMode("room");
+    setDmTarget(null);
+    setDmMessages([]);
     resetRoomUi();
+    socket.emit("room:join", { roomId: room.roomId });
+  };
+
+  const openDmWithUser = (target: RoomUser) => {
+    const socket = socketRef.current;
+    const roomId = selectedRoom?.roomId;
+
+    if (!socket || !socket.connected) {
+      setSocketError("Socket is not connected");
+      return;
+    }
+
+    if (!roomId) {
+      setSocketError("Join a room first to start direct message");
+      return;
+    }
+
+    // Set DM mode immediately with target user
+    setDmTarget(target);
+    setChatMode("dm");
+    setDmMessages([]);
+    setShowUsersDropdown(false);
+
+    // Emit request to load DM history from server
+    socket.emit("dm:history", { roomId, targetUserId: Number(target.userId) });
+  };
+
+  const closeDm = () => {
+    setChatMode("room");
+    setDmTarget(null);
+    setDmMessages([]);
+    setShowUsersDropdown(false);
+  };
+
+  const leaveRoom = () => {
+    const socket = socketRef.current;
+    const roomId = selectedRoom?.roomId;
+
+    if (!socket || !socket.connected || !roomId) {
+      setSocketError("Not connected to room");
+      return;
+    }
+
+    socket.emit("room:leave", { roomId });
+    setJoinedRoomIds((prev) => {
+      const next = new Set(prev);
+      next.delete(roomId);
+      return next;
+    });
+    setMessages([]);
+    setRoomUsers([]);
+    setChatMode("room");
+    setDmTarget(null);
+    setShowRoomMenu(false);
+  };
+
+  const leaveRoomFromCard = (roomId: number) => {
+    const socket = socketRef.current;
+
+    if (!socket || !socket.connected) {
+      setSocketError("Not connected");
+      return;
+    }
+
+    socket.emit("room:leave", { roomId });
+    setJoinedRoomIds((prev) => {
+      const next = new Set(prev);
+      next.delete(roomId);
+      return next;
+    });
+
+    // If this was the currently selected room, clear its data
+    if (selectedRoom?.roomId === roomId) {
+      setMessages([]);
+      setRoomUsers([]);
+      setChatMode("room");
+      setDmTarget(null);
+    }
   };
 
   const createRoom = async () => {
@@ -233,7 +325,15 @@ function LiveRooms() {
         const withoutSame = prev.filter((room) => room.roomId !== createdRoom.roomId);
         return [createdRoom, ...withoutSame];
       });
-      selectRoom(String(createdRoom.roomId));
+      setSelectedUiRoomId(String(createdRoom.roomId));
+      setChatMode("room");
+      setDmTarget(null);
+      setDmMessages([]);
+      resetRoomUi();
+      const socket = socketRef.current;
+      if (socket && socket.connected) {
+        socket.emit("room:join", { roomId: createdRoom.roomId });
+      }
 
       setShowCreate(false);
       setRoomName("");
@@ -259,6 +359,22 @@ function LiveRooms() {
     if (!socket || !socket.connected || !activeRoomId || !text) return;
 
     socket.emit("chat:send", { roomId: activeRoomId, text });
+    setMessageInput("");
+  };
+
+  const sendDirectMessage = () => {
+    const socket = socketRef.current;
+    const roomId = selectedRoom?.roomId;
+    const text = messageInput.trim();
+
+    if (!socket || !socket.connected || !roomId || !dmTarget || !text) return;
+
+    socket.emit("dm:send", {
+      roomId,
+      targetUserId: Number(dmTarget.userId),
+      text,
+    });
+
     setMessageInput("");
   };
 
@@ -362,6 +478,7 @@ function LiveRooms() {
               ) : (
                 filteredRooms.map((room) => {
                   const active = room.id === selectedUiRoomId;
+                  const isJoined = joinedRoomIds.has(room.roomId);
                   return (
                     <div
                       key={room.id}
@@ -371,16 +488,37 @@ function LiveRooms() {
                           : "border-slate-200 bg-white hover:bg-slate-50"
                       }`}
                     >
-                      <button onClick={() => selectRoom(room.id)} className="w-full text-left">
-                        <p className="text-sm font-bold text-slate-800">{room.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <span className="inline-flex items-center gap-1">
-                            <Hash size={12} /> {room.roomId}
-                          </span>
-                          <span>{room.language}</span>
-                          {room.slug ? <span>slug: {room.slug}</span> : null}
-                        </div>
-                      </button>
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          onClick={() => setSelectedUiRoomId(room.id)}
+                          className="flex-1 text-left"
+                        >
+                          <p className="text-sm font-bold text-slate-800">{room.name}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span className="inline-flex items-center gap-1">
+                              <Hash size={12} /> {room.roomId}
+                            </span>
+                            <span>{room.language}</span>
+                            {room.slug ? <span>slug: {room.slug}</span> : null}
+                          </div>
+                        </button>
+
+                        {isJoined ? (
+                          <button
+                            onClick={() => leaveRoomFromCard(room.roomId)}
+                            className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-red-100 text-red-700 hover:bg-red-200"
+                          >
+                            Leave
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => joinRoom(room)}
+                            className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-orange-500 text-white hover:bg-orange-600"
+                          >
+                            Join
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })
@@ -390,14 +528,99 @@ function LiveRooms() {
 
           <main className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex min-h-[72vh] flex-col">
             <div className="bg-linear-to-r from-orange-50 to-sky-50 border-b border-slate-100 p-4">
-              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
-                {selectedRoom ? selectedRoom.name : "Select a room"}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {selectedRoom
-                  ? `Room ID ${selectedRoom.roomId} • ${roomUsers.length} online`
-                  : "Pick a room from left panel to join"}
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+                    {chatMode === "dm" && dmTarget
+                      ? `Direct Message with ${dmTarget.username}`
+                      : selectedRoom
+                      ? selectedRoom.name
+                      : "Select a room"}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {chatMode === "dm" && dmTarget
+                      ? `Private conversation • ${dmTarget.country}`
+                      : selectedRoom
+                      ? `Room ID ${selectedRoom.roomId} • ${roomUsers.length} online`
+                      : "Pick a room from left panel to join"}
+                  </p>
+                </div>
+
+                {chatMode === "room" && selectedRoom && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowUsersDropdown(!showUsersDropdown)}
+                        className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 transition"
+                        title="Online users"
+                      >
+                        <Users size={20} className="text-slate-700" />
+                      </button>
+
+                      {showUsersDropdown && chatMode === "room" && (
+                        <div className="absolute top-12 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-50">
+                          <div className="p-2 border-b border-slate-100">
+                            <p className="text-xs font-semibold text-slate-600 px-2">Online Users ({roomUsers.length})</p>
+                          </div>
+                          <div className="max-h-75 overflow-y-auto">
+                            {roomUsers.length === 0 ? (
+                              <p className="text-xs text-slate-500 p-3">No users online</p>
+                            ) : (
+                              roomUsers.map((ru) => (
+                                <button
+                                  key={`${ru.userId}-${ru.username}`}
+                                  onClick={() => {
+                                    openDmWithUser(ru);
+                                    setShowUsersDropdown(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 transition flex items-center gap-2"
+                                >
+                                  <MessageCircle size={14} className="text-orange-500" />
+                                  <div>
+                                    <p className="font-medium text-slate-800">{ru.username}</p>
+                                    <p className="text-xs text-slate-500">{ru.country}</p>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowRoomMenu(!showRoomMenu)}
+                        className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 transition"
+                        title="Room options"
+                      >
+                        <MoreVertical size={20} className="text-slate-700" />
+                      </button>
+
+                      {showRoomMenu && (
+                        <div className="absolute top-12 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-40">
+                          <button
+                            onClick={leaveRoom}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
+                          >
+                            <X size={14} />
+                            Leave Room
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {chatMode === "dm" && (
+                  <button
+                    onClick={closeDm}
+                    className="rounded-full p-2 hover:bg-slate-200"
+                  >
+                    <X size={20} className="text-slate-600" />
+                  </button>
+                )}
+              </div>
               {socketError ? (
                 <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {socketError}
@@ -405,24 +628,46 @@ function LiveRooms() {
               ) : null}
             </div>
 
-            <div className="min-h-60 flex-1 overflow-y-auto bg-slate-50 p-4 space-y-3">
-              {messages.length === 0 ? (
+            <div className="h-96 overflow-y-auto bg-slate-50 p-4 space-y-3">
+              {chatMode === "dm" ? (
+                dmMessages.length === 0 ? (
+                  <div className="grid h-full min-h-60 place-items-center text-sm text-slate-400">
+                    No direct messages yet. Start a conversation.
+                  </div>
+                ) : (
+                  dmMessages.map((msg) => {
+                    const isFromOtherUser = msg.senderUserId === Number(dmTarget?.userId);
+                    return (
+                      <div key={msg.id} className={`flex ${isFromOtherUser ? "justify-start" : "justify-end"}`}>
+                        <div
+                          className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
+                            isFromOtherUser ? "bg-white text-slate-800" : "bg-slate-900 text-white"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.text}</p>
+                          <p className="mt-1 text-[10px] opacity-60">
+                            {new Date(msg.timestamp).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )
+              ) : messages.length === 0 ? (
                 <div className="grid h-full min-h-60 place-items-center text-sm text-slate-400">
                   No messages yet. Start the conversation.
                 </div>
               ) : (
                 messages.map((msg, index) => {
-                  const mine =
-                    String(msg.userId) === String(user?.email) || msg.username === user?.username;
-
+                  const isFromCurrentUser = msg.username === user?.username;
                   return (
                     <div
                       key={`${msg.timestamp}-${index}`}
-                      className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                      className={`flex ${isFromCurrentUser ? "justify-end" : "justify-start"}`}
                     >
                       <div
                         className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
-                          mine ? "bg-slate-900 text-white" : "bg-white text-slate-800"
+                          isFromCurrentUser ? "bg-slate-900 text-white" : "bg-white text-slate-800"
                         }`}
                       >
                         <p className="mb-1 text-xs opacity-70">{msg.username}</p>
@@ -437,41 +682,30 @@ function LiveRooms() {
               )}
             </div>
 
-            <div className="border-t border-slate-100 bg-white px-4 py-3">
-              <p className="mb-2 flex items-center gap-1 text-xs font-semibold text-slate-600">
-                <Users size={14} />
-                Online ({roomUsers.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {roomUsers.map((ru) => (
-                  <span
-                    key={`${ru.userId}-${ru.username}`}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
-                  >
-                    {ru.username} • {ru.country}
-                  </span>
-                ))}
-              </div>
-            </div>
-
             <div className="border-t border-slate-100 bg-white p-4">
               <div className="flex gap-2">
                 <input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") sendMessage();
+                    if (e.key === "Enter") {
+                      if (chatMode === "dm") {
+                        sendDirectMessage();
+                      } else {
+                        sendMessage();
+                      }
+                    }
                   }}
-                  placeholder="Type your message..."
+                  placeholder={chatMode === "dm" ? "Type a direct message..." : "Type your message..."}
                   className="flex-1 rounded-xl border border-slate-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                 />
                 <button
-                  onClick={sendMessage}
+                  onClick={chatMode === "dm" ? sendDirectMessage : sendMessage}
                   disabled={!isConnected || !selectedRoom}
                   className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={16} />
-                  Send
+                  {chatMode === "dm" ? "Send DM" : "Send"}
                 </button>
               </div>
             </div>

@@ -7,10 +7,12 @@ const socketAuthMiddleware  = require('./middleware/socketAuth.middleware');
 const useRoutes = require('./routes/routes');
 const User = require('./models/user.model');
 const handleSocketEvents = require('./socket/socketHandler');
+const handleDmEvents = require('./socket/dmSocketHandler');
 const Rooms = require('./models/room.model');
 const RoomMessage = require('./models/room-message.model');
 const RoomParticipants = require('./models/room-participants.model');
 const CulturalPost = require('./models/cultural-post.model');
+const DirectMessage = require('./models/direct-message.model');
 
 
 
@@ -65,6 +67,7 @@ io.on('connection',(socket)=>{
     console.log("Socket connected:", socket.id);
 
     handleSocketEvents(io,socket);
+    handleDmEvents(io,socket);
 })
 
 
@@ -81,6 +84,7 @@ server.listen(port, async()=>{
         await RoomMessage.createRoomMessageTable();
         await RoomParticipants.createRoomParticipantsTable();
         await CulturalPost.createCulturalPostTable();
+        await DirectMessage.createDirectMessaeTable();
         console.log('Table created')
     }catch(err){
         console.error('error during creating table', err);

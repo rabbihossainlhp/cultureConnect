@@ -113,6 +113,20 @@ export interface RoomListResponse {
   data?: RoomListItem[];
 }
 
+export interface DirectMessage {
+  id: number;
+  senderUserId: number;
+  receiverUserId: number;
+  text: string;
+  timestamp: string;
+}
+
+export interface DmTargetUser {
+  userId: string | number;
+  username: string;
+  country: string;
+}
+
 export interface CreatePostPayload {
   title: string;
   description: string;
