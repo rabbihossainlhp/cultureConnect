@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { Plus, Send, Search, Users, Wifi, WifiOff, Hash, RefreshCcw, MessageCircle, X, MoreVertical } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { createRoomApiHandler, getRoomListApiHandler } from "../../services/api.service";
-import type { DirectMessage, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
+import type { DirectMessage, DirectMessageResponse, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
 import type { DmHistoryPayload, RoomJoinedPayload, UiRoom } from "../../types";
 
 const toSlug = (value: string) =>
@@ -14,6 +14,22 @@ const toSlug = (value: string) =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+
+// Safe date parsing helper
+const formatMessageTime = (timestamp: string | Date | undefined): string => {
+  if (!timestamp) return "Just now";
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid timestamp:", timestamp);
+      return "Just now";
+    }
+    return date.toLocaleString();
+  } catch (error) {
+    console.error("Date parsing error:", error, timestamp);
+    return "Just now";
+  }
+};
 
 const mapRoomListItemToUiRoom = (room: RoomListItem): UiRoom => ({
   id: String(room.id),
@@ -39,12 +55,37 @@ function LiveRooms() {
   const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
   const [messageInput, setMessageInput] = useState("");
 
-  // DM state
+  // DM state - Load from localStorage on mount
   const [chatMode, setChatMode] = useState<"room" | "dm">("room");
   const [dmTarget, setDmTarget] = useState<DmTargetUser | null>(null);
   const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
+  const [dmConversations, setDmConversations] = useState<Map<number, { user: DmTargetUser; lastMessage: string; timestamp: string }>>(() => {
+    try {
+      const saved = localStorage.getItem("dmConversations");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return new Map(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading dmConversations from localStorage:", error);
+    }
+    return new Map();
+  });
+  const [unreadDmCount, setUnreadDmCount] = useState<Set<number>>(() => {
+    try {
+      const saved = localStorage.getItem("unreadDmCount");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return new Set(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading unreadDmCount from localStorage:", error);
+    }
+    return new Set();
+  });
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<"rooms" | "dms">("rooms");
 
   // Socket and UI state
   const [isConnected, setIsConnected] = useState(false);
@@ -61,6 +102,26 @@ function LiveRooms() {
   const [loadingRooms, setLoadingRooms] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
+
+  // Persist DM conversations to localStorage
+  useEffect(() => {
+    try {
+      const data = Array.from(dmConversations.entries());
+      localStorage.setItem("dmConversations", JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving dmConversations to localStorage:", error);
+    }
+  }, [dmConversations]);
+
+  // Persist unread DM count to localStorage
+  useEffect(() => {
+    try {
+      const data = Array.from(unreadDmCount);
+      localStorage.setItem("unreadDmCount", JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving unreadDmCount to localStorage:", error);
+    }
+  }, [unreadDmCount]);
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedUiRoomId) || null,
@@ -123,6 +184,13 @@ function LiveRooms() {
     socket.on("connect", () => {
       setIsConnected(true);
       setSocketError("");
+
+      // Rejoin last room after reconnect/refresh
+      const savedRoomId = localStorage.getItem("lastJoinedRoomId");
+      if (savedRoomId) {
+        const roomId = Number(savedRoomId);
+        socket.emit("room:join", { roomId });
+      }
     });
 
     socket.on("disconnect", () => {
@@ -138,6 +206,7 @@ function LiveRooms() {
       setSocketError("");
       setRoomUsers(payload.users || []);
       setMessages(payload.messages || []);
+      setSelectedUiRoomId(String(payload.room.id));
       setJoinedRoomIds((prev) => {
         const next = new Set(prev);
         next.add(payload.room.id);
@@ -164,21 +233,97 @@ function LiveRooms() {
 
     // DM events
     socket.on("dm:history", (payload: DmHistoryPayload) => {
+      console.log("📨 DM History received:", payload);
       setSocketError("");
       setChatMode("dm");
       setDmTarget(payload.target);
       setDmMessages(payload.messages || []);
+
+      // Clear unread flag for this conversation
+      if (payload.target) {
+        setUnreadDmCount((prev) => {
+          const next = new Set(prev);
+          next.delete(Number(payload.target.userId));
+          return next;
+        });
+      }
+
+      // Add conversation to DM list
+      if (payload.target) {
+        setDmConversations((prev) => {
+          const updated = new Map(prev);
+          const lastMsg = payload.messages && payload.messages.length > 0 ? payload.messages[payload.messages.length - 1] : null;
+          // Use message_text from backend (not text)
+          const lastMessageText = lastMsg ? ((lastMsg as DirectMessageResponse).message_text || lastMsg.text || "Message") : "Started conversation";
+          const lastTimestamp = lastMsg ? ((lastMsg as DirectMessageResponse).created_at || lastMsg.timestamp || new Date().toISOString()) : new Date().toISOString();
+          updated.set(Number(payload.target.userId), {
+            user: payload.target,
+            lastMessage: lastMessageText,
+            timestamp: lastTimestamp,
+          });
+          return updated;
+        });
+      }
     });
 
-    socket.on("dm:new", (incoming: DirectMessage) => {
+    socket.on("dm:new", (incoming: DirectMessageResponse) => {
+      console.log("💬 New DM received:", incoming);
       setDmMessages((prev) => [...prev, incoming]);
+
+      // Determine other user (sender or receiver) - use snake_case from backend
+      const currentUserId = Number(user?.id);
+      const senderUserId = incoming.sender_user_id || incoming.senderUserId;
+      const receiverUserId = incoming.receiver_user_id || incoming.receiverUserId;
+      const isCurrentUserReceiver = receiverUserId === currentUserId;
+      const otherUserId = isCurrentUserReceiver ? senderUserId : receiverUserId;
+      
+      // Extract message text with fallback
+      const messageText = (incoming.message_text || incoming.text || "Message");
+      const timestamp = (incoming.created_at || incoming.timestamp || new Date().toISOString());
+      
+      // Add/create DM conversation in left panel
+      setDmConversations((prev) => {
+        const updated = new Map(prev);
+        
+        // Create conversation entry if it doesn't exist
+        if (!updated.has(otherUserId)) {
+          // Create new conversation - fetch user details ideally but use placeholder
+          updated.set(otherUserId, {
+            user: {
+              userId: otherUserId,
+              username: `User ${otherUserId}`,
+              country: ""
+            },
+            lastMessage: messageText,
+            timestamp: timestamp,
+          });
+        } else {
+          // Update existing conversation
+          const existing = updated.get(otherUserId)!;
+          updated.set(otherUserId, {
+            ...existing,
+            lastMessage: messageText,
+            timestamp: timestamp,
+          });
+        }
+        return updated;
+      });
+
+      // Only mark as unread if CURRENT USER is the RECEIVER
+      if (isCurrentUserReceiver) {
+        setUnreadDmCount((prev) => {
+          const next = new Set(prev);
+          next.add(otherUserId);
+          return next;
+        });
+      }
     });
 
     socketRef.current = socket;
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   const resetRoomUi = () => {
     setMessages([]);
@@ -198,10 +343,11 @@ function LiveRooms() {
     setDmTarget(null);
     setDmMessages([]);
     resetRoomUi();
+    localStorage.setItem("lastJoinedRoomId", String(room.roomId));
     socket.emit("room:join", { roomId: room.roomId });
   };
 
-  const openDmWithUser = (target: RoomUser) => {
+  const openDmWithUser = (target: RoomUser | DmTargetUser) => {
     const socket = socketRef.current;
     const roomId = selectedRoom?.roomId;
 
@@ -220,6 +366,14 @@ function LiveRooms() {
     setChatMode("dm");
     setDmMessages([]);
     setShowUsersDropdown(false);
+    setViewMode("rooms");
+
+    // Clear unread flag for this user
+    setUnreadDmCount((prev) => {
+      const next = new Set(prev);
+      next.delete(Number(target.userId));
+      return next;
+    });
 
     // Emit request to load DM history from server
     socket.emit("dm:history", { roomId, targetUserId: Number(target.userId) });
@@ -230,6 +384,7 @@ function LiveRooms() {
     setDmTarget(null);
     setDmMessages([]);
     setShowUsersDropdown(false);
+    setViewMode("rooms");
   };
 
   const leaveRoom = () => {
@@ -252,6 +407,7 @@ function LiveRooms() {
     setChatMode("room");
     setDmTarget(null);
     setShowRoomMenu(false);
+    localStorage.removeItem("lastJoinedRoomId");
   };
 
   const leaveRoomFromCard = (roomId: number) => {
@@ -275,6 +431,7 @@ function LiveRooms() {
       setRoomUsers([]);
       setChatMode("room");
       setDmTarget(null);
+      localStorage.removeItem("lastJoinedRoomId");
     }
   };
 
@@ -470,58 +627,136 @@ function LiveRooms() {
               </div>
             )}
 
+            {/* Tabs: Rooms vs DMs */}
+            <div className="border-b border-slate-100 bg-slate-50 flex gap-0">
+              <button
+                onClick={() => setViewMode("rooms")}
+                className={`flex-1 px-4 py-2 text-sm font-semibold border-b-2 transition ${
+                  viewMode === "rooms"
+                    ? "border-orange-500 text-orange-600 bg-white"
+                    : "border-transparent text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                Rooms
+              </button>
+              <button
+                onClick={() => setViewMode("dms")}
+                className={`flex-1 px-4 py-2 text-sm font-semibold border-b-2 transition relative ${
+                  viewMode === "dms"
+                    ? "border-purple-500 text-purple-600 bg-white"
+                    : "border-transparent text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                Messages
+                {unreadDmCount.size > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                    {unreadDmCount.size}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <div className="max-h-[65vh] overflow-y-auto p-2">
-              {filteredRooms.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                  No matching rooms. Try refresh or create one.
-                </p>
-              ) : (
-                filteredRooms.map((room) => {
-                  const active = room.id === selectedUiRoomId;
-                  const isJoined = joinedRoomIds.has(room.roomId);
-                  return (
-                    <div
-                      key={room.id}
-                      className={`mb-2 rounded-xl border p-3 transition ${
-                        active
-                          ? "border-orange-300 bg-orange-50"
-                          : "border-slate-200 bg-white hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          onClick={() => setSelectedUiRoomId(room.id)}
-                          className="flex-1 text-left"
+              {viewMode === "rooms" ? (
+                // ROOMS VIEW
+                <>
+                  {filteredRooms.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                      No matching rooms. Try refresh or create one.
+                    </p>
+                  ) : (
+                    filteredRooms.map((room) => {
+                      const active = room.id === selectedUiRoomId;
+                      const isJoined = joinedRoomIds.has(room.roomId);
+                      return (
+                        <div
+                          key={room.id}
+                          className={`mb-2 rounded-xl border p-3 transition ${
+                            active
+                              ? "border-orange-300 bg-orange-50"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
                         >
-                          <p className="text-sm font-bold text-slate-800">{room.name}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span className="inline-flex items-center gap-1">
-                              <Hash size={12} /> {room.roomId}
-                            </span>
-                            <span>{room.language}</span>
-                            {room.slug ? <span>slug: {room.slug}</span> : null}
+                          <div className="flex items-start justify-between gap-2">
+                            <button
+                              onClick={() => setSelectedUiRoomId(room.id)}
+                              className="flex-1 text-left"
+                            >
+                              <p className="text-sm font-bold text-slate-800">{room.name}</p>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                <span className="inline-flex items-center gap-1">
+                                  <Hash size={12} /> {room.roomId}
+                                </span>
+                                <span>{room.language}</span>
+                                {room.slug ? <span>slug: {room.slug}</span> : null}
+                              </div>
+                            </button>
+
+                            {isJoined ? (
+                              <button
+                                onClick={() => leaveRoomFromCard(room.roomId)}
+                                className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-red-100 text-red-700 hover:bg-red-200"
+                              >
+                                Leave
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => joinRoom(room)}
+                                className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-orange-500 text-white hover:bg-orange-600"
+                              >
+                                Join
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              ) : (
+                // DMS VIEW
+                <>
+                  {dmConversations.size === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center">
+                      <MessageCircle size={32} className="mx-auto mb-2 text-slate-400" />
+                      <p className="text-sm text-slate-500">No messages yet</p>
+                      <p className="text-xs text-slate-400 mt-1">Start a conversation by clicking a user</p>
+                    </div>
+                  ) : (
+                    Array.from(dmConversations.entries()).map(([userId, conv]) => {
+                      const isUnread = unreadDmCount.has(userId);
+                      return (
+                        <button
+                          key={userId}
+                          onClick={() => openDmWithUser(conv.user)}
+                          className={`w-full mb-2 rounded-xl border p-3 text-left transition ${
+                            dmTarget?.userId === userId
+                              ? "border-purple-300 bg-purple-50"
+                              : isUnread
+                              ? "border-red-200 bg-red-50 hover:bg-red-100"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-slate-800">{conv.user.username}</p>
+                              <p className="text-xs text-slate-500 mt-1">{conv.user.country}</p>
+                              <p className={`text-xs mt-1 truncate ${isUnread ? "text-red-700 font-semibold" : "text-slate-600"}`}>
+                                {conv.lastMessage}
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-1">
+                                {formatMessageTime(conv.timestamp)}
+                              </p>
+                            </div>
+                            {isUnread && (
+                              <div className="w-2 h-2 rounded-full bg-red-500 mt-1 shrink-0"></div>
+                            )}
                           </div>
                         </button>
-
-                        {isJoined ? (
-                          <button
-                            onClick={() => leaveRoomFromCard(room.roomId)}
-                            className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-red-100 text-red-700 hover:bg-red-200"
-                          >
-                            Leave
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => joinRoom(room)}
-                            className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-orange-500 text-white hover:bg-orange-600"
-                          >
-                            Join
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                      );
+                    })
+                  )}
+                </>
               )}
             </div>
           </aside>
@@ -633,10 +868,18 @@ function LiveRooms() {
                 dmMessages.length === 0 ? (
                   <div className="grid h-full min-h-60 place-items-center text-sm text-slate-400">
                     No direct messages yet. Start a conversation.
+                    <div className="text-xs text-slate-500 mt-2">
+                      (Messages received: {dmMessages.length}, Target: {dmTarget?.username})
+                    </div>
                   </div>
                 ) : (
                   dmMessages.map((msg) => {
-                    const isFromOtherUser = msg.senderUserId === Number(dmTarget?.userId);
+                    // Use sender_user_id from backend (snake_case)
+                    const msgResponse = msg as DirectMessageResponse;
+                    const senderUserId = msgResponse.sender_user_id || msgResponse.senderUserId;
+                    const isFromOtherUser = senderUserId === Number(dmTarget?.userId);
+                    // Use message_text from backend (not text)
+                    const messageText = msgResponse.message_text || msgResponse.text || "(empty message)";
                     return (
                       <div key={msg.id} className={`flex ${isFromOtherUser ? "justify-start" : "justify-end"}`}>
                         <div
@@ -644,9 +887,9 @@ function LiveRooms() {
                             isFromOtherUser ? "bg-white text-slate-800" : "bg-slate-900 text-white"
                           }`}
                         >
-                          <p className="text-sm">{msg.text}</p>
+                          <p className="text-sm">{messageText}</p>
                           <p className="mt-1 text-[10px] opacity-60">
-                            {new Date(msg.timestamp).toLocaleTimeString()}
+                            {formatMessageTime((msg as DirectMessageResponse).created_at || msg.timestamp)}
                           </p>
                         </div>
                       </div>
@@ -673,7 +916,7 @@ function LiveRooms() {
                         <p className="mb-1 text-xs opacity-70">{msg.username}</p>
                         <p className="text-sm">{msg.text}</p>
                         <p className="mt-1 text-[10px] opacity-60">
-                          {new Date(msg.timestamp).toLocaleTimeString()}
+                          {formatMessageTime(msg.timestamp)}
                         </p>
                       </div>
                     </div>
