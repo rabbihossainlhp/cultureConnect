@@ -122,7 +122,7 @@ const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
             SELECT id,sender_user_id,receiver_user_id, message_text,created_at 
             FROM direct_messages
             WHERE (sender_user_id = $1 AND receiver_user_id = $2)
-                OR (receiver_user_id = $2 AND sender_user_id = $1)
+                OR (sender_user_id = $2 AND receiver_user_id = $1)
             ORDER BY created_at ASC
             LIMIT $3
         `;

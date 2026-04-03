@@ -121,6 +121,14 @@ export interface DirectMessage {
   timestamp: string;
 }
 
+// Backend returns snake_case fields along with camelCase
+export interface DirectMessageResponse extends DirectMessage {
+  sender_user_id?: number;
+  receiver_user_id?: number;
+  message_text?: string;
+  created_at?: string;
+}
+
 export interface DmTargetUser {
   userId: string | number;
   username: string;
