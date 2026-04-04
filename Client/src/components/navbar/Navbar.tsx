@@ -148,6 +148,12 @@ function Navbar() {
                     <p className="text-sm font-semibold text-gray-800">{user?.username}</p>
                     <p className="text-xs text-gray-600">{user?.email}</p>
                   </li>
+                  <li>
+                    <NavLink onClick={closeMenus} to="/profile" className="btn btn-ghost justify-start">
+                      <UserCircle2 size={16} />
+                      My Profile
+                    </NavLink>
+                  </li>
                   <li className="mt-2">
                     <NavLink onClick={closeMenus} to="/dashboard" className="btn btn-ghost justify-start">
                       <LayoutDashboard size={16} />
@@ -304,6 +310,15 @@ function Navbar() {
                 </div>
 
                 <div className="mt-3 flex flex-col gap-2">
+                  <NavLink
+                    onClick={closeMenus}
+                    to="/profile"
+                    className="btn btn-ghost justify-start"
+                  >
+                    <UserCircle2 size={16} />
+                    My Profile
+                  </NavLink>
+
                   <NavLink
                     onClick={closeMenus}
                     to="/dashboard"
