@@ -177,7 +177,7 @@ function LiveRooms() {
 
   // Socket connection and listeners
   useEffect(() => {
-    const socket = io("http://localhost:4713/", {
+    const socket = io("http://localhost:4713", {
       withCredentials: true,
     });
 
