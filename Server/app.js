@@ -25,6 +25,14 @@ const app = express();
 useMiddleware(app);
 
 
+// app.use((req,res,next)=>{
+//     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+//     console.log('Headers: ', req.headers);
+//     console.log('Body: ',req.body);
+//     next();
+// })
+
+
 //useAllRoutes...
 useRoutes(app);
 
@@ -75,7 +83,7 @@ app.set('io',io);
 
 
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4713;
 server.listen(port, async()=>{
     console.log(`your app is running on http://localhost:${port}`);
     try{
