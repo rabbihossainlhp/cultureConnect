@@ -33,18 +33,18 @@ const getDmRoomKey = (userId1, userId2) => {
 const areBothInRoom = async (roomId, userId1, userId2, io) => {
   try {
     const roomKey = String(roomId);
-    console.log(`\n🔍 === DM CHECK START ===`);
+    console.log(`\nDM CHECK START`);
     console.log(`Checking room: "${roomKey}" for users ${userId1} and ${userId2}`);
     
     // Debug: Log all rooms
     const allRooms = io.sockets.adapter.rooms;
-    console.log(`📋 Available rooms:`, Array.from(allRooms.keys()).slice(0, 10));
+    console.log(`Available rooms:`, Array.from(allRooms.keys()).slice(0, 10));
     
     const socketsInRoom = await io.sockets.adapter.rooms.get(roomKey);
-    console.log(`📊 Sockets in room "${roomKey}":`, socketsInRoom?.size || 0);
+    console.log(`Sockets in room "${roomKey}":`, socketsInRoom?.size || 0);
 
     if (!socketsInRoom || socketsInRoom.size === 0) {
-      console.log(`❌ NO SOCKETS FOUND in room "${roomKey}"`);
+      console.log(` NO SOCKETS FOUND in room "${roomKey}"`);
       return false;
     }
 
@@ -56,13 +56,13 @@ const areBothInRoom = async (roomId, userId1, userId2, io) => {
     for (const socketId of socketsInRoom) {
       const socket = io.sockets.sockets.get(socketId);
       if (!socket) {
-        console.log(`⚠️  Socket ${socketId} not found in sockets collection`);
+        console.log(`Socket ${socketId} not found in sockets collection`);
         continue;
       }
 
       console.log(`\n  Socket: ${socketId}`);
-      console.log(`    - socket.data exists: ${!!socket.data}`);
-      console.log(`    - socket.data.user exists: ${!!socket.data?.user}`);
+      console.log(`socket.data exists: ${!!socket.data}`);
+      console.log(`socket.data.user exists: ${!!socket.data?.user}`);
       
       const userId = socket.data?.user?.id;
       console.log(`    - userId: ${userId}`);
@@ -73,15 +73,15 @@ const areBothInRoom = async (roomId, userId1, userId2, io) => {
         if (userId === userId1) user1Found = true;
         if (userId === userId2) user2Found = true;
       } else {
-        console.log(`    ⚠️  No user.id found in socket.data`);
+        console.log(` No user.id found in socket.data`);
       }
     }
 
-    console.log(`\n👥 Summary:`);
+    console.log(`\n Summary:`);
     console.log(`   Users found in room: ${usersInRoom}`);
     console.log(`   User ${userId1} found: ${user1Found}`);
     console.log(`   User ${userId2} found: ${user2Found}`);
-    console.log(`🔍 === DM CHECK END ===\n`);
+    console.log(` DM CHECK END \n`);
 
     return user1Found && user2Found;
   } catch (error) {
