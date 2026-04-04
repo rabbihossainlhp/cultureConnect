@@ -7,13 +7,16 @@ const cookieParser = require('cookie-parser');
 
 
 const middlewares = [
-    morgan('dev'),
-    express.json(),
+    
     cors({
         origin:['http://localhost:5173'],
         credentials:true,
+        allowedHeaders:['Content-Type'],
         methods:['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
     }),
+    morgan('dev'),
+    express.json(),
+    express.urlencoded({extended:true}),
     cookieParser(),
 ];
 

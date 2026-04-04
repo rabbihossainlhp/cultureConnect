@@ -12,6 +12,8 @@ import type {
     SingupPayload,
 } from "../constants/interface";
 
+
+
 const Base_api_url = import.meta.env.VITE_API_URI;
 
 
