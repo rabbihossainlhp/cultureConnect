@@ -13,6 +13,9 @@ import SinglePost from "../pages/SinglePost";
 import HomeGate from "./HomeGate";
 import ProtectedRoute from "./ProtectedRoute";
 import LiveRooms from "../pages/LiveRooms/LiveRooms";
+import Missions from "../pages/Learn/Missions";
+import Languages from "../pages/Learn/Languages";
+import Profile from "../pages/Profile";
 
 
 
@@ -23,6 +26,14 @@ const publicRoutes = [
   {path:"explore",Component:Explore},
   {path:"explore/:slug",Component:SinglePost},
   {path:"live-rooms",Component:LiveRooms},
+  {path:"profile", Component:Profile},
+  {
+    path:"learn",
+    children:[
+      {path:"missions", Component:Missions},
+      {path:"languages", Component:Languages},
+    ]
+  },
   {
     path:"/auth",
     Component:Auth,
@@ -32,7 +43,6 @@ const publicRoutes = [
       {path:"signup", Component:Signup},
     ]
   },
-  
 ]
 
 

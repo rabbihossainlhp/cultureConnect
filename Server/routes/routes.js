@@ -33,7 +33,7 @@ const routesWithPaths = [
 const useRoutes = (app) =>{
 
     routesWithPaths.map(route =>{
-        console.log(`Registering route: ${route.path}`)
+        // console.log(`Registering route: ${route.path}`)
         app.use(route.path, route.handler);
     });
 };

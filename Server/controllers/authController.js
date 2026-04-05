@@ -150,6 +150,7 @@ const registerController = async(req,res) =>{
 
 
 
+
 const logoutController = async(req,res)=>{
     try{
         res.clearCookie("access_token");
