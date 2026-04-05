@@ -94,7 +94,7 @@ const areBothInRoom = async (roomId, userId1, userId2, io) => {
 // Fetch target user details from database
 const fetchTargetUser = async (userId) => {
   try {
-    const query = `SELECT id, username, country FROM users WHERE id = $1`;
+    const query = `SELECT id, username, country,profile_picture FROM users WHERE id = $1`;
     const result = await db.query(query, [userId]);
     
     if (result.rows.length === 0) {
@@ -106,6 +106,7 @@ const fetchTargetUser = async (userId) => {
       userId: user.id,
       username: user.username,
       country: user.country,
+      profile_picture:user.profile_picture,
     };
   } catch (error) {
     console.error("Error fetching target user:", error.message);
