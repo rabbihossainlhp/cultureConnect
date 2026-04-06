@@ -12,6 +12,7 @@ import Explore from "../pages/Explore";
 import SinglePost from "../pages/SinglePost";
 import HomeGate from "./HomeGate";
 import ProtectedRoute from "./ProtectedRoute";
+import GuestRoute from "./GuestRoute";
 import LiveRooms from "../pages/LiveRooms/LiveRooms";
 import Missions from "../pages/Learn/Missions";
 import Languages from "../pages/Learn/Languages";
@@ -36,11 +37,11 @@ const publicRoutes = [
   },
   {
     path:"/auth",
-    Component:Auth,
+    element:<GuestRoute><Auth/></GuestRoute>,
     children:[
       {index:true, element:<Navigate to="login" replace/>},
-      {path:"login", Component:Login},
-      {path:"signup", Component:Signup},
+      {path:"login", element:<GuestRoute><Login/></GuestRoute>},
+      {path:"signup", element:<GuestRoute><Signup/></GuestRoute>},
     ]
   },
 ]
