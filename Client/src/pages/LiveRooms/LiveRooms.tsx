@@ -267,7 +267,7 @@ function LiveRooms() {
     });
 
     socket.on("dm:new", (incoming: DirectMessageResponse) => {
-      console.log("💬 New DM received:", incoming);
+      console.log("New DM received:", incoming);
       setDmMessages((prev) => [...prev, incoming]);
 
       // Determine other user (sender or receiver) - use snake_case from backend
@@ -292,7 +292,8 @@ function LiveRooms() {
             user: {
               userId: otherUserId,
               username: `User ${otherUserId}`,
-              country: ""
+              country: "",
+              profile_picture: ""
             },
             lastMessage: messageText,
             timestamp: timestamp,
@@ -738,9 +739,17 @@ function LiveRooms() {
                           }`}
                         >
                           <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                              <img 
+                                src={conv.user.profile_picture}
+                                alt={conv.user.username}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+
+
                             <div className="flex-1">
                               <p className="text-sm font-bold text-slate-800">{conv.user.username}</p>
-                              <p className="text-xs text-slate-500 mt-1">{conv.user.country}</p>
                               <p className={`text-xs mt-1 truncate ${isUnread ? "text-red-700 font-semibold" : "text-slate-600"}`}>
                                 {conv.lastMessage}
                               </p>
@@ -810,7 +819,13 @@ function LiveRooms() {
                                   }}
                                   className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 transition flex items-center gap-2"
                                 >
-                                  <MessageCircle size={14} className="text-orange-500" />
+                                  <div className="w-6 h-6 rounded-full overflow-hidden">
+                                    <img 
+                                      src={ru.profile_picture}
+                                      alt={ru.username}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
                                   <div>
                                     <p className="font-medium text-slate-800">{ru.username}</p>
                                     <p className="text-xs text-slate-500">{ru.country}</p>

@@ -43,7 +43,7 @@ export interface LoginResponse{
 
 export interface MeResponse{
     success:boolean;
-    data?:{username:string,email:string; country:string};
+    data?:{id?:number;username:string,email:string; country:string;bio?:string;native_language?:string;profile_picture?:string};
     message:string;
 }
 
@@ -75,6 +75,7 @@ export interface RoomUser {
   userId: string | number;
   username: string;
   country: string;
+  profile_picture?:string;
 }
 
 export interface CreateRoomPayload {
@@ -133,6 +134,7 @@ export interface DmTargetUser {
   userId: string | number;
   username: string;
   country: string;
+  profile_picture?:string;
 }
 
 export interface CreatePostPayload {

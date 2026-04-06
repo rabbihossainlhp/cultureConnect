@@ -155,3 +155,22 @@ export const getPostListApiHandler = async (): Promise<PostListResponse> => {
 
     return data;
 };
+
+
+// update profile api handler
+export const updateProfileApiHandler = async (formData: FormData) => {
+    const res = await fetch(`${Base_api_url}/profile`, {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+        // DO NOT set Content-Type header - browser will set it automatically with boundary
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Profile update failed");
+    }
+
+    return data;
+};

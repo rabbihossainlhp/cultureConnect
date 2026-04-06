@@ -12,16 +12,40 @@ cloudinary.config({
 });
 
 
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params:{
-        folder: 'cultureConnect/posts',
-        allowed_formats:['jpg','png','jpeg','webp']
-    }
-});
+//Factory function to create different folder on cloude...
+const uploadMiddleware = (folderType = 'posts') =>{
+    const folderMap = {
+        posts:'cultureConnect/posts',
+        profiles:'cultureConnect/profiles',
+        galleries:'cultureConnect/galleries',
+        rooms:'cultureConnect/rooms',
+    };
+
+    const folder = folderMap[folderType] || 'cultureConnect/uploads';
+
+    const storage = new CloudinaryStorage({
+        cloudinary,
+        params:{
+            folder: folder,
+            allowed_formats:['jpg','png','jpeg','webp']
+        }
+    });
 
 
-const upload = multer({storage});
+    const upload = multer({storage});
+    return upload.single('image'); 
+};
 
 
-module.exports = upload.single('image');
+
+
+
+
+
+
+module.exports = {
+    uploadPost:uploadMiddleware('posts'),
+    uploadProfile:uploadMiddleware('profiles'),
+    uploadRoom:uploadMiddleware('rooms'),
+    uploadGallery:uploadMiddleware('galleries')
+};

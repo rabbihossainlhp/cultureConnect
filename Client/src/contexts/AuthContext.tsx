@@ -2,7 +2,7 @@ import {createContext,useContext,useEffect,useMemo,useState} from 'react';
 import { meApiHandler,logoutApiHandler } from '../services/api.service';
 
 
-type User = {id?: number; username:string; email:string; country:string;};
+type User = {id?: number; username:string; email:string; country:string; bio?: string; native_language?: string; profile_picture?: string;};
 
 
 type AuthContextType = {

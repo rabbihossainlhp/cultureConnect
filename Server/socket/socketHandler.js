@@ -34,7 +34,8 @@ const fetchOnlineUsers = async(roomId)=>{
         SELECT 
         u.id AS "userId",
         u.username,
-        u.country
+        u.country,
+        u.profile_picture
 
         FROM room_participants rp JOIN users u ON u.id = rp.user_id
         WHERE rp.room_id = $1
