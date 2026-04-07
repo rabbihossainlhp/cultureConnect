@@ -3,6 +3,7 @@ import {AnimatePresence,motion} from "framer-motion";
 import { Eye, EyeOff, Lock, Mail, Globe, X } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { loginApiHandler } from "../../services/api.service";
+import { useAuth } from "../../contexts/AuthContext";
 import type { ToastState } from "../../types";
 
 
@@ -16,6 +17,7 @@ export default function Login() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { refreshAuth } = useAuth();
 
 
 
@@ -34,6 +36,7 @@ export default function Login() {
     setIsLoading(true);
     try{
       const res = await loginApiHandler({email,password});
+      await refreshAuth();
       navigate("/dashboard")
 
       console.log(res)
