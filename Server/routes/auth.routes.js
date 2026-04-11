@@ -6,6 +6,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 
 router.post('/register',registerController);
+router.post('/otp-send',)
 router.post('/login', loginController);
 router.post('/logout',authMiddleware,logoutController);
 

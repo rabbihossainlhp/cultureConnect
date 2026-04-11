@@ -2,6 +2,8 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const {sendOtpMail} = require('../config/email');
+
 
 
 
@@ -167,6 +169,53 @@ const logoutController = async(req,res)=>{
         })
     }
 }
+
+
+
+
+
+const sendOtpController = async(req,res) =>{
+    try{
+        const {email,password,username,country,nativeLanguage} = req.body;
+
+        if(!email || !password || !username || !country || !nativeLanguage){
+            return res.status(400).json({
+                success:false,
+                message:"All fields are requrid"
+            });
+        }
+
+
+        const checkUserQuery = `SELECT id FROM users WHERE email=$1`;
+        const existUser = await db.query(checkUserQuery,[email]);
+        if(existUser.rows.length>0){
+            return res.status(409).json({
+                success:false,
+                message:"Email already registerd. Please login"
+            })
+        }
+
+
+
+        const checkPendingQuery = `SELECT id FROM email_verification_codes WHERE email=$1`;
+        const pendingResult = await db.query(checkPendingQuery,[email]);
+        if(pendingResult.rows.length>0){
+            await db.query(`DELETE FROM email_verification_codes WHERE email=$1`,[email]);
+        }
+
+
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log(`Generated OTP for ${email}: ${otp}`);
+        
+    }catch(err){
+        console.error('Error during sendOtp in controller: ',err.message);
+        return res.status(500).json({
+            success:false,
+            message:'Server error during OTP sending'
+        });
+    }
+};
 
 
 
