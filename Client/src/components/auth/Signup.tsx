@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {motion,AnimatePresence} from "framer-motion";
 import { Eye, EyeOff, Globe, Globe2, Languages, Lock, Mail, UserRound , X} from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import {signupApiHandler} from "../../services/api.service";
+import { sendOtpApiHandler } from "../../services/api.service";
 import type { ToastState } from "../../types";
 
 
@@ -61,14 +61,15 @@ export default function Signup() {
 
     setIsLoading(true);
     try{
-      await signupApiHandler({
+      const response = await sendOtpApiHandler({
         username,email,country,
         nativeLanguage,password
       });
 
-      navigate('/auth/login',{
-        replace:true,
-        state:{message:'Account created successfully.'}
+      // Redirect to verify email page with email passed as state
+      navigate('/verify-email', {
+        replace: true,
+        state: { email: response.email }
       });
     }catch(err){
       setToast({

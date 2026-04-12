@@ -7,6 +7,7 @@ import DashboardLayout from "../Layout/DashboardLayout";
 import Auth from "../pages/Auth";
 import Login from "../components/auth/Login";
 import Signup from "../components/auth/Signup";
+import VerifyEmail from "../pages/VerifyEmail";
 import NotFound from "../pages/NotFound";
 import Explore from "../pages/Explore";
 import SinglePost from "../pages/SinglePost";
@@ -28,6 +29,7 @@ const publicRoutes = [
   {path:"explore/:slug",Component:SinglePost},
   {path:"live-rooms",Component:LiveRooms},
   {path:"profile", Component:Profile},
+  {path:"verify-email", Component:VerifyEmail},
   {
     path:"learn",
     children:[
