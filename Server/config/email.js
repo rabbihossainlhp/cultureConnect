@@ -1,8 +1,8 @@
 //dependencies....
-const nodemailer = require('nodemail');
+const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-    service:'',
+    service:'gmail',
     auth:{
         user:process.env.EMAIL_USER,
         pass:process.env.EMAIL_PASS,
@@ -17,7 +17,7 @@ const sendOtpMail = async (email,otp) =>{
         const mailTemplate = `
             <h2>Email Verification</h2>
             <p>Your verification code is:</p>
-            <h1 style="color:#ff6b35; font-size:32px; latter-spacing:5px;">${otp}</h1>
+            <h1 style="color:#ff6b35; font-size:32px; letter-spacing:5px;">${otp}</h1>
             <p>This code expires in <strong>10 minutes</strong></p>
             <p>If you didn't request this please ignore it.</p>
         `;

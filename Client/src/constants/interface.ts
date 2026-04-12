@@ -47,6 +47,30 @@ export interface MeResponse{
     message:string;
 }
 
+// OTP Related Interfaces
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
+
+export interface VerifyOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    id: number;
+    email: string;
+    username: string;
+    country: string;
+    nativeLanguage: string;
+  };
+}
+
 
 
 

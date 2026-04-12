@@ -7,7 +7,7 @@ const EmailVerificationCode = {
     tableName:'email_verification_codes',
     async createEmailVerifyTable(){
         const query = `
-            CREATE TABLE email_verification_codes(
+            CREATE TABLE IF NOT EXISTS email_verification_codes(
                 id SERIAL PRIMARY KEY,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 otp_code VARCHAR(6) NOT NULL,
@@ -17,8 +17,8 @@ const EmailVerificationCode = {
                 attempts INT DEFAULT 0
             );
 
-            CREATE INDEX idx_email_verifications_email ON email_verification_codes(email);
-            CREATE INDEX idx_email_verifications_expires_at ON email_verification_codes(expires_at);
+            CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verification_codes(email);
+            CREATE INDEX IF NOT EXISTS idx_email_verifications_expires_at ON email_verification_codes(expires_at);
         `;
 
         try{

@@ -10,6 +10,9 @@ import type {
     RoomListResponse,
     SignupResponse,
     SingupPayload,
+    SendOtpResponse,
+    VerifyOtpPayload,
+    VerifyOtpResponse,
 } from "../constants/interface";
 
 
@@ -170,6 +173,44 @@ export const updateProfileApiHandler = async (formData: FormData) => {
 
     if (!res.ok) {
         throw new Error(data.message || "Profile update failed");
+    }
+
+    return data;
+};
+
+
+// Send OTP api handler (signup)
+export const sendOtpApiHandler = async(payload: SingupPayload): Promise<SendOtpResponse> => {
+    const res = await fetch(`${Base_api_url}/auth/register`, {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+    });
+
+    const data = (await res.json()) as SendOtpResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Failed to send OTP");
+    }
+
+    return data;
+};
+
+
+// Verify OTP api handler (create account)
+export const verifyOtpApiHandler = async(payload: VerifyOtpPayload): Promise<VerifyOtpResponse> => {
+    const res = await fetch(`${Base_api_url}/auth/otp-verify`, {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+    });
+
+    const data = (await res.json()) as VerifyOtpResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "OTP verification failed");
     }
 
     return data;
