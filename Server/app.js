@@ -13,6 +13,7 @@ const RoomMessage = require('./models/room-message.model');
 const RoomParticipants = require('./models/room-participants.model');
 const CulturalPost = require('./models/cultural-post.model');
 const DirectMessage = require('./models/direct-message.model');
+const EmailVerificationCode = require('./models/email-verification-code.model');
 
 
 
@@ -93,6 +94,7 @@ server.listen(port, async()=>{
         await RoomParticipants.createRoomParticipantsTable();
         await CulturalPost.createCulturalPostTable();
         await DirectMessage.createDirectMessaeTable();
+        await EmailVerificationCode.createEmailVerifyTable();
         console.log('Table created')
     }catch(err){
         console.error('error during creating table', err);
