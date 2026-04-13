@@ -1,14 +1,8 @@
 //dependencies....
-const nodemailer = require('nodemailer');
+const {Resend} = require('resend');
+console.log("RESEND API KEY SET?",process.env.RESEND_API_KEY?"YES":"NO");
 
-const transporter = nodemailer.createTransport({
-    service:'gmail',
-    auth:{
-        user:process.env.EMAIL_USER,
-        pass:process.env.EMAIL_PASS,
-    },
-});
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 //function to send mail..
 const sendOtpMail = async (email,otp) =>{
@@ -22,12 +16,15 @@ const sendOtpMail = async (email,otp) =>{
             <p>If you didn't request this please ignore it.</p>
         `;
 
-        await transporter.sendMail({
-            from:process.env.EMAIL_USER,
+        const response = await resend.emails.send({
+            from:'onboarding@resend.dev', 
             to:email,
             subject:'CultureConnect - Email Verification Code',
             html:mailTemplate,
         });
+
+        console.log("Resend Response: ",response)
+        console.log("OTP sent to: ",email);
 
         return true;
     }catch(err){
