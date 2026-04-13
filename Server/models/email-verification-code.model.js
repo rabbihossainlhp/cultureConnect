@@ -13,7 +13,7 @@ const EmailVerificationCode = {
                 otp_code VARCHAR(6) NOT NULL,
                 user_data JSONB NOT NULL,
                 expires_at TIMESTAMPTZ NOT NULL,
-                crested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 attempts INT DEFAULT 0
             );
 
