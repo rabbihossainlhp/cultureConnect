@@ -29,6 +29,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.5",
     "pg": "^8.20.0",
+    "redis": "^5.12.1",
     "resend": "^6.10.0",
     "socket.io": "^4.8.3"
   },

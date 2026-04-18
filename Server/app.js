@@ -2,6 +2,7 @@ const express = require('express');
 const {Server} = require('socket.io');
 const {createServer} = require('http');
 require('dotenv').config();
+const redisClient = require('./config/redis');
 const useMiddleware = require('./middleware/common.middleware');
 const socketAuthMiddleware  = require('./middleware/socketAuth.middleware');
 const useRoutes = require('./routes/routes');
@@ -79,8 +80,33 @@ io.on('connection',(socket)=>{
     handleDmEvents(io,socket);
 })
 
-
 app.set('io',io);
+
+app.get('/api/redis-test',async(req,res)=>{
+    try{
+        await redisClient.set('testKey','45324Test-value..');
+
+        const value = await redisClient.get('testKey');
+
+        return res.status(200).json({
+            success:true,
+            message:'redis working',
+            data:value 
+        });
+
+        
+    }catch(err){
+        return res.status(500).json({
+            success:false,
+            message:'Redis test failed',
+            error:err.message
+        })
+    }
+})
+
+
+
+
 
 
 

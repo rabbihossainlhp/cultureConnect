@@ -1,5 +1,7 @@
 //dependencies....
 const db = require('../config/db');
+const redisClient = require('../config/redis');
+
 
 const MAX_MESSAGE_LENGTH = 500;
 
@@ -112,6 +114,34 @@ const isParticipantsOnline = async(roomId,userId) =>{
     const result = await db.query(membershipsQuery,[roomId,userId]);
     return result.rows.length > 0;
 };
+
+
+
+
+const saveMessageToRedis = async(roomId,message) =>{
+    try{
+        const key = `room:${roomId}:message`;
+
+        await redisClient.rpush(key,JSON.stringify(message));
+
+        const messageCount = await redisClient.llen(key);
+
+        if(messageCount>100){
+            await redisClient.ltrim(key,-100,-1);
+        }
+
+        console.log('Message saved to Redis for room --> ', roomId);
+
+    }catch(error){
+        console.error("Save error to Redis..",error.message);
+    }
+}
+
+
+
+const getMessagesFromRedis = async (roomId) =>{
+    
+}
 
 
 
