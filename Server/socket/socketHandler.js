@@ -1,6 +1,6 @@
 //dependencies....
 const db = require('../config/db');
-const redisClient = require('../config/redis');
+const { getMessagesFromRedis, saveMessageToRedis } = require('../redis/redis.helper');
 
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -118,35 +118,6 @@ const isParticipantsOnline = async(roomId,userId) =>{
 
 
 
-const saveMessageToRedis = async(roomId,message) =>{
-    try{
-        const key = `room:${roomId}:message`;
-
-        await redisClient.rpush(key,JSON.stringify(message));
-
-        const messageCount = await redisClient.llen(key);
-
-        if(messageCount>100){
-            await redisClient.ltrim(key,-100,-1);
-        }
-
-        console.log('Message saved to Redis for room --> ', roomId);
-
-    }catch(error){
-        console.error("Save error to Redis..",error.message);
-    }
-}
-
-
-
-const getMessagesFromRedis = async (roomId) =>{
-    
-}
-
-
-
-
-
 
 
 
@@ -177,9 +148,24 @@ const handleSocketEvents = (io,socket) =>{
             await setParticipantsOnline(roomId, user.id);
             socket.join(String(roomId));
 
-            const [onlineUsers,recentMessages] = await Promise.all([
+            const redisMessages = await getMessagesFromRedis(roomId);
+
+            let recentMessages;
+
+            if(redisMessages.length >0){
+                recentMessages = redisMessages;
+                console.log(`Loaded ${recentMessages.length} messages from Redis..`);
+            }else{
+                recentMessages = await fetchRecentMessages(roomId);
+
+                for(const msg of recentMessages){
+                    await saveMessageToRedis(roomId,msg);
+                }
+                console.log(`Loaded ${recentMessages.length} messages from redis`);
+            }
+
+            const [onlineUsers] = await Promise.all([
                 fetchOnlineUsers(roomId),
-                fetchRecentMessages(roomId),
             ]);
 
 
@@ -260,25 +246,45 @@ const handleSocketEvents = (io,socket) =>{
             };
 
 
+
+            const messageData = {
+                id:Date.now()+Math.random(),
+                roomId:roomId,
+                userId:user.id,
+                username:user.username,
+                text:text,
+                timestamp:new Date()
+            };
+
+
+            await saveMessageToRedis(roomId,messageData);
+
+            //broadcast message to all users
+            io.to(String(roomId)).emit('chat:new',messageData);
+
+
+
             const insertQuery = `
                 INSERT INTO room_messages(room_id, sender_user_id, message_text, message_type)
                 VALUES($1, $2, $3, 'text')
                 RETURNING id, room_id AS "roomId", message_text AS text, created_at AS timestamp
             `;
 
-            const insertResult = await db.query(insertQuery,[roomId,user.id, text]);
-            const saved = insertResult.rows[0];
+
+            db.query(insertQuery,[roomId,user.id, text])
+                .then((insertResult)=>{
+                    const saved = insertResult.rows[0];
+                    console.log(`Message permanently saved to DB: ${saved.id}`);
+                })
+                .catch((err) =>{
+                    console.error(`Database (psql) saved failed: `,err.message);
+                })
 
 
-            io.to(String(roomId)).emit('chat:new',{
-                id:saved.id,
-                roomId:saved.roomId,
-                userId:user.id,
-                username: user.username,
-                text: saved.text,
-                timestamp:saved.timestamp
-            });
-            console.log(`message sent in room ${roomId}: ${text.substring(0,35)}...`);
+            // const insertResult = await db.query(insertQuery,[roomId,user.id, text]);
+            // const saved = insertResult.rows[0];
+            
+            console.log(`message sent in room  instantly from redis -->${roomId}: ${text.substring(0,35)}...`);
         }catch(err){
             console.error('caht:send error:' ,err.message);
             socket.emit('socket:error', {code:'SEND_FAILED', message:'Faild to send message in the room'});

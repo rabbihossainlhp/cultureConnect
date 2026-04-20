@@ -1,6 +1,7 @@
 // Dependencies
 const DirectMessage = require("../models/direct-message.model");
 const db = require("../config/db");
+const { saveDmToRedis } = require("../redis/redis.helper");
 
 const MAX_DM_LENGTH = 500;
 
@@ -250,12 +251,10 @@ const handleDmEvents = (io, socket) => {
         return socket.emit("socket:error", { code: "INVALID_USER", message: "Invalid target user ID" });
       }
 
-      // Validation: Message not empty
       if (!text) {
         return socket.emit("socket:error", { code: "EMPTY_MESSAGE", message: "Message cannot be empty" });
       }
 
-      // Validation: Message length limit
       if (text.length > MAX_DM_LENGTH) {
         return socket.emit("socket:error", {
           code: "MESSAGE_TOO_LONG",
@@ -263,12 +262,10 @@ const handleDmEvents = (io, socket) => {
         });
       }
 
-      // Validation: Can't DM yourself
       if (user.id === targetUserId) {
         return socket.emit("socket:error", { code: "INVALID_TARGET", message: "Cannot message yourself" });
       }
 
-      // Validation: Both users must be online in the room
       const bothInRoom = await areBothInRoom(roomId, user.id, targetUserId, io);
       if (!bothInRoom) {
         return socket.emit("socket:error", {
@@ -277,22 +274,28 @@ const handleDmEvents = (io, socket) => {
         });
       }
 
-      // Save DM to database
+      //first handle save to radis....
+
+      const msseageData = {
+        id: Date.now() + Math.random(),
+        senderUserId: user.id,
+        receiverUserId: targetUserId,
+        text: text,
+        timestamp: new Date(),
+      }
+
+      await saveDmToRedis(user.id,targetUserId,msseageData);
+
+      // Save DM to database --> PSQL
+      db.query
       const savedMessage = await saveDmMessage(user.id, targetUserId, text);
 
       // Broadcast to DM room
       const dmRoomKey = getDmRoomKey(user.id, targetUserId);
       socket.join(dmRoomKey);
 
-      io.to(dmRoomKey).emit("dm:new", {
-        id: savedMessage.id,
-        senderUserId: savedMessage.sender_user_id,
-        receiverUserId: savedMessage.receiver_user_id,
-        text: savedMessage.message_text,
-        timestamp: savedMessage.created_at,
-      });
 
-      console.log(`✓ DM sent: User ${user.id} → User ${targetUserId}`);
+      console.log(`DM sent: User ${user.id} → User ${targetUserId}`);
     } catch (error) {
       console.error("dm:send error:", error.message);
       socket.emit("socket:error", { code: "DM_SEND_ERROR", message: "Failed to send DM" });
