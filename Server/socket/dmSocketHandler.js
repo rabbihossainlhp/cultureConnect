@@ -1,7 +1,11 @@
 // Dependencies
 const DirectMessage = require("../models/direct-message.model");
 const db = require("../config/db");
-const { saveDmToRedis } = require("../redis/redis.helper");
+const { saveDmToRedis, getDmFromRedis,getDmRoomKey,clearDmFromRedis } = require("../redis/redis.helper");
+
+
+
+
 
 const MAX_DM_LENGTH = 500;
 
@@ -23,12 +27,6 @@ const normalizedText = (value) => {
   return value.trim();
 };
 
-// Creates deterministic DM room key: "dm:1:5" (always smaller ID first)
-const getDmRoomKey = (userId1, userId2) => {
-  const minId = Math.min(userId1, userId2);
-  const maxId = Math.max(userId1, userId2);
-  return `dm:${minId}:${maxId}`;
-};
 
 // Check if both users are online in the same group room
 const areBothInRoom = async (roomId, userId1, userId2, io) => {
@@ -221,7 +219,20 @@ const handleDmEvents = (io, socket) => {
       socket.join(dmRoomKey);
 
       // Fetch conversation history
-      const messages = await fetchDmHistory(user.id, targetUserId);
+      const redisDms = await getDmFromRedis(user.id,targetUserId);
+
+      let messages;
+      if(redisDms.length>0){
+        messages = redisDms;
+        console.log(`Loaded ${redisDms.length} DMs from Redis`);
+      }else{
+        messages = await fetchDmHistory(user.id, targetUserId);
+        for(const msg of messages){
+          await saveDmToRedis(user.id,targetUserId,msg);
+        }
+        console.log(`Loaded ${messages.length} DMs from PSQL`);
+      }
+
 
       // Send DM history to frontend
       socket.emit("dm:history", {
@@ -278,21 +289,27 @@ const handleDmEvents = (io, socket) => {
 
       const msseageData = {
         id: Date.now() + Math.random(),
-        senderUserId: user.id,
-        receiverUserId: targetUserId,
-        text: text,
-        timestamp: new Date(),
+        sender_user_id: user.id,
+        receiver_user_id: targetUserId,
+        message_text: text,
+        created_at: new Date(),
       }
 
       await saveDmToRedis(user.id,targetUserId,msseageData);
 
       // Save DM to database --> PSQL
-      db.query
-      const savedMessage = await saveDmMessage(user.id, targetUserId, text);
+      saveDmMessage(user.id, targetUserId, text)
+        .then((savedMsg)=>{
+          console.log(` DM saved to DB: ${savedMsg.id}`);
+        })
+        .catch((err)=>{
+          console.error(' DB save failed: ',err.message);
+        })
 
       // Broadcast to DM room
       const dmRoomKey = getDmRoomKey(user.id, targetUserId);
       socket.join(dmRoomKey);
+      io.to(String(dmRoomKey)).emit('dm:new',msseageData);
 
 
       console.log(`DM sent: User ${user.id} → User ${targetUserId}`);

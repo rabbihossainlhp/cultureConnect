@@ -1,5 +1,6 @@
 //dependencies....
 const db = require('../config/db');
+const bcrypt = require('bcrypt');
 const { getMessagesFromRedis, saveMessageToRedis } = require('../redis/redis.helper');
 
 
@@ -135,6 +136,7 @@ const handleSocketEvents = (io,socket) =>{
     socket.on('room:join', async(payload)=>{
         try{
             const roomId = normalizedRoomId(payload?.roomId ?? payload);
+            const password = payload?.password || null;
             const room = await ensureActiveRoom(roomId);
 
             if(!roomId){
@@ -144,6 +146,23 @@ const handleSocketEvents = (io,socket) =>{
                 return socket.emit('socket:error',{code:'INACTIVE ROOM', message:'Inactive room not able to receive user'});
             }
 
+            if(room.visibility === 'private'){
+                if(!password){
+                    return socket.emit('socket:error',{
+                        code:'PASSWORD REQURIED',
+                        message:'Password required for joining in a private room'
+                    })
+                }
+
+                const findRoom = await db.query(`SELECT * FROM rooms WHERE id=$1`,[roomId]);
+                const matchPassword = await bcrypt.compare(password,findRoom.rows[0].password);
+                if(!matchPassword){
+                    return socket.emit('socket:error',{
+                        code:'PASSWORD INCORRECT or INVALID ROOM',
+                        message:'Password not correct for joining in a private room or this room dose not exists'
+                    })
+                }
+            }
 
             await setParticipantsOnline(roomId, user.id);
             socket.join(String(roomId));

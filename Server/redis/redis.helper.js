@@ -6,12 +6,12 @@ const saveMessageToRedis = async(roomId,message) =>{
     try{
         const key = `room:${roomId}:messages`;
 
-        await redisClient.rpush(key,JSON.stringify(message));
+        await redisClient.rPush(key,JSON.stringify(message));
 
-        const messageCount = await redisClient.llen(key);
+        const messageCount = await redisClient.lLen(key);
 
         if(messageCount>100){
-            await redisClient.ltrim(key,-100,-1);
+            await redisClient.lTrim(key,-100,-1);
         }
 
         console.log('Message saved to Redis for room --> ', roomId);
@@ -27,7 +27,7 @@ const getMessagesFromRedis = async (roomId) =>{
     try{
         const key = `room:${roomId}:messages`;
 
-        const messages = await redisClient.lrange(key,0,-1);
+        const messages = await redisClient.lRange(key,0,-1);
 
         return messages.map(msg =>JSON.parse(msg));
     }catch(err){
@@ -65,11 +65,11 @@ const saveDmToRedis = async(currentUserId, targetUserId, message) =>{
     try{
         const dmKey = getDmRoomKey(currentUserId,targetUserId);
         //add msg end of the list...
-        await redisClient.rpush(dmKey,JSON.stringify(message));
+        await redisClient.rPush(dmKey,JSON.stringify(message));
 
-        const messageCount = await redisClient.llen(dmKey);
+        const messageCount = await redisClient.lLen(dmKey);
         if(messageCount>50){
-            await redisClient.ltrim(dmKey,-50,-1);
+            await redisClient.lTrim(dmKey,-50,-1);
         }
 
         console.log('DM saved to redis: '+currentUserId + '---->' + targetUserId);
@@ -87,7 +87,7 @@ const getDmFromRedis = async(currentUserId, targetUserId) =>{
     try{
         const dmKey = getDmRoomKey(currentUserId,targetUserId);
         //fetch message
-        const messages = await redisClient.lrange(dmKey,0,-1);
+        const messages = await redisClient.lRange(dmKey,0,-1);
         return messages.map(msg=>JSON.parse(msg));
 
     }catch(er){
@@ -124,4 +124,5 @@ module.exports = {
     saveDmToRedis,
     getDmFromRedis,
     clearDmFromRedis,
+    getDmRoomKey,
 }

@@ -116,6 +116,7 @@ server.listen(port, async()=>{
     try{
         await User.createUserTable();
         await Rooms.createRoomsTable();
+        await Rooms.alterTableAddPasswordCol();
         await RoomMessage.createRoomMessageTable();
         await RoomParticipants.createRoomParticipantsTable();
         await CulturalPost.createCulturalPostTable();
