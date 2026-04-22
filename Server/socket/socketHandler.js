@@ -155,11 +155,18 @@ const handleSocketEvents = (io,socket) =>{
                 }
 
                 const findRoom = await db.query(`SELECT * FROM rooms WHERE id=$1`,[roomId]);
-                const matchPassword = await bcrypt.compare(password,findRoom.rows[0].password);
+
+                if(!findRoom.rows[0] || !findRoom.rows[0].room_password){
+                    return socket.emit('socket:error',{
+                        code:'NVALID ROOM',
+                        message:'May this room dose not exists'
+                    })
+                }
+                const matchPassword = await bcrypt.compare(password,findRoom.rows[0].room_password);
                 if(!matchPassword){
                     return socket.emit('socket:error',{
-                        code:'PASSWORD INCORRECT or INVALID ROOM',
-                        message:'Password not correct for joining in a private room or this room dose not exists'
+                        code:'PASSWORD INCORRECT ',
+                        message:'Password not correct for joining in a private room '
                     })
                 }
             }

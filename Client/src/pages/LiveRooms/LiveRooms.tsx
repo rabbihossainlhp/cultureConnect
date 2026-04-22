@@ -98,8 +98,15 @@ function LiveRooms() {
   const [language, setLanguage] = useState("");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [capacity, setCapacity] = useState("100");
+  const [roomPassword, setRoomPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [loadingRooms, setLoadingRooms] = useState(false);
+
+  // Password modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingRoomJoin, setPendingRoomJoin] = useState<UiRoom | null>(null);
+  const [joinPassword, setJoinPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const socketRef = useRef<Socket | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -218,7 +225,18 @@ function LiveRooms() {
     });
 
     socket.on("socket:error", (payload: { code?: string; message?: string }) => {
-      setSocketError(payload?.message || "Socket error");
+      // ✅ Handle password errors for private rooms
+      if (payload?.code === "PASSWORD REQURIED" || payload?.code === "PASSWORD REQUIRED") {
+        setPasswordError("This room requires a password");
+        if (!showPasswordModal) {
+          setShowPasswordModal(true);
+        }
+      } else if (payload?.code?.includes("PASSWORD") || payload?.message?.includes("Password")) {
+        setPasswordError(payload?.message || "Invalid password");
+        setJoinPassword("");
+      } else {
+        setSocketError(payload?.message || "Socket error");
+      }
     });
 
     // Room events
@@ -359,6 +377,15 @@ function LiveRooms() {
       return;
     }
 
+    // ✅ If private room, show password modal instead of joining directly
+    if (room.visibility === "private") {
+      setPendingRoomJoin(room);
+      setShowPasswordModal(true);
+      setJoinPassword("");
+      setPasswordError("");
+      return;
+    }
+
     setSelectedUiRoomId(room.id);
     setChatMode("room");
     setDmTarget(null);
@@ -366,6 +393,26 @@ function LiveRooms() {
     resetRoomUi();
     localStorage.setItem("lastJoinedRoomId", String(room.roomId));
     socket.emit("room:join", { roomId: room.roomId });
+  };
+
+  // ✅ NEW: Join room with password for private rooms
+  const joinRoomWithPassword = (room: UiRoom, password: string) => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) {
+      setPasswordError("Socket is not connected");
+      return;
+    }
+
+    setSelectedUiRoomId(room.id);
+    setChatMode("room");
+    setDmTarget(null);
+    setDmMessages([]);
+    resetRoomUi();
+    localStorage.setItem("lastJoinedRoomId", String(room.roomId));
+    socket.emit("room:join", { roomId: room.roomId, password });
+    setShowPasswordModal(false);
+    setJoinPassword("");
+    setPasswordError("");
   };
 
   const openDmWithUser = (target: RoomUser | DmTargetUser) => {
@@ -471,6 +518,12 @@ function LiveRooms() {
       return;
     }
 
+    // ✅ Validate password for private rooms
+    if (visibility === "private" && !roomPassword.trim()) {
+      setSocketError("Password is required for private rooms");
+      return;
+    }
+
     setCreating(true);
     setSocketError("");
 
@@ -481,6 +534,7 @@ function LiveRooms() {
         language: normalizedLanguage,
         visibility,
         capacity: normalizedCapacity,
+        password: visibility === "private" ? roomPassword : undefined,
       });
 
       if (!response.success || !response.room) {
@@ -518,6 +572,7 @@ function LiveRooms() {
       setLanguage("");
       setVisibility("public");
       setCapacity("100");
+      setRoomPassword("");
 
       // Sync with server list so every recent room is shown.
       void fetchRooms();
@@ -638,6 +693,16 @@ function LiveRooms() {
                     className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   />
                 </div>
+                {/* ✅ NEW: Password input for private rooms */}
+                {visibility === "private" && (
+                  <input
+                    type="password"
+                    value={roomPassword}
+                    onChange={(e) => setRoomPassword(e.target.value)}
+                    placeholder="Room Password (required for private)"
+                    className="w-full rounded-lg border border-orange-300 px-3 py-2 text-sm bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                )}
                 <button
                   onClick={createRoom}
                   disabled={creating}
@@ -990,6 +1055,66 @@ function LiveRooms() {
           </main>
         </div>
       </div>
+
+      {/* ✅ NEW: Password Modal for Private Rooms */}
+      {showPasswordModal && pendingRoomJoin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 border border-slate-200">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="text-2xl">🔐</div>
+              <h2 className="text-xl font-bold text-slate-900">Private Room</h2>
+            </div>
+            
+            <p className="text-slate-600 mb-4 text-sm">
+              <strong>{pendingRoomJoin.name}</strong> is password protected. Enter the password to join:
+            </p>
+            
+            <input
+              type="password"
+              placeholder="Enter password"
+              value={joinPassword}
+              onChange={(e) => setJoinPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && joinPassword.trim()) {
+                  joinRoomWithPassword(pendingRoomJoin, joinPassword);
+                }
+              }}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoFocus
+            />
+
+            {passwordError && (
+              <p className="text-red-600 text-sm mb-4 font-medium">❌ {passwordError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setJoinPassword("");
+                  setPasswordError("");
+                }}
+                className="flex-1 px-4 py-2 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-100 font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (joinPassword.trim()) {
+                    joinRoomWithPassword(pendingRoomJoin, joinPassword);
+                  } else {
+                    setPasswordError("Please enter a password");
+                  }
+                }}
+                disabled={!joinPassword.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Join Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
