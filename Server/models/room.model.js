@@ -31,6 +31,19 @@ const Rooms = {
             console.error('Error creating rooms table:', err)
             throw err;
         }
+    },
+
+
+    async alterTableAddPasswordCol(){
+        const query = `ALTER TABLE rooms 
+                        ADD COLUMN IF NOT EXISTS room_password VARCHAR(255) DEFAULT NULL`;
+        
+        try{
+            await db.query(query);
+            console.log('room_password col added');
+        }catch(err){
+            console.error('Password column already exists: ',err.message);
+        }
     }
 
 }

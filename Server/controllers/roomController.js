@@ -1,8 +1,9 @@
 //dependencies...
 const db = require('../config/db');
+const bcrypt = require('bcrypt');
 
 const createRoomController = async (req,res) =>{
-    const {slug,roomName,language,visibility, description,capacity} = req.body;
+    const {slug,roomName,language,visibility, description,capacity,password} = req.body;
 
     if(!slug || !roomName || !language || !visibility ||  !capacity){
         return res.status(400).json({
@@ -10,6 +11,16 @@ const createRoomController = async (req,res) =>{
             message: 'All field are required..'
         })
     };
+
+    if(visibility === 'private' && !password){
+        return res.status(400).json({
+            success:false,
+            message:'Password must required for create a private room'
+        })
+    }
+
+    //private room's password.....
+    const hashPass = await bcrypt.hash(password,10);
 
     const normalizeDescription = typeof description === 'string' ? description.trim():null;
 
@@ -34,12 +45,22 @@ const createRoomController = async (req,res) =>{
 
         
         const createRoomQuery = `
-            INSERT INTO rooms (slug,name,language,description,visibility,host_user_id,max_capacity)
-            VALUES($1,$2, $3, $4, $5, $6,$7)
+            INSERT INTO rooms (slug,name,language,description,visibility,host_user_id,max_capacity,room_password)
+            VALUES($1,$2, $3, $4, $5, $6,$7,$8)
             RETURNING id,name,slug,language,visibility,max_capacity as capacity
         `;
 
-        const createdRoom = await db.query(createRoomQuery,[slug,roomName,language,normalizeDescription,visibility,req.user.id,capacity]);
+        const createdRoom = await db.query(createRoomQuery,[
+            slug,
+            roomName,
+            language,
+            normalizeDescription,
+            visibility,
+            req.user.id,
+            capacity,
+            visibility === 'private'? hashPass:null
+        ]);
+        
         return res.status(201).json({
             success:true,
             message:'Room created successfully!',

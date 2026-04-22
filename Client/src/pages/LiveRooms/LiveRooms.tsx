@@ -102,6 +102,26 @@ function LiveRooms() {
   const [loadingRooms, setLoadingRooms] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // EXPLANATION: Auto-scroll to bottom when new messages arrive (only chat window, not page)
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      setTimeout(() => {
+        messagesContainerRef.current!.scrollTop = messagesContainerRef.current!.scrollHeight;
+      }, 0);
+    }
+  };
+
+  // Scroll when room messages update
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Scroll when DM messages update
+  useEffect(() => {
+    scrollToBottom();
+  }, [dmMessages]);
 
   // Persist DM conversations to localStorage
   useEffect(() => {
@@ -878,7 +898,7 @@ function LiveRooms() {
               ) : null}
             </div>
 
-            <div className="h-96 overflow-y-auto bg-slate-50 p-4 space-y-3">
+            <div ref={messagesContainerRef} className="h-96 overflow-y-auto bg-slate-50 p-4 space-y-3">
               {chatMode === "dm" ? (
                 dmMessages.length === 0 ? (
                   <div className="grid h-full min-h-60 place-items-center text-sm text-slate-400">
