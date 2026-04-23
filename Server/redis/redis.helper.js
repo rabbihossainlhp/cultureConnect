@@ -115,6 +115,23 @@ const clearDmFromRedis = async(currentUserId, targetUserId) =>{
 
 
 
+const batchSaveDmToRedis = async(currentUserId,targetUserId,messages)=>{
+    const dmKey = getDmRoomKey(currentUserId,targetUserId);
+    const pipeline = redisClient.multi();
+
+    for(const msg of messages){
+        pipeline.rPush(dmKey,JSON.stringify(msg));
+    }
+
+    await pipeline.exec();
+
+    const count = await redisClient.lLen(dmKey);
+    if(count>50){
+        await redisClient.lTrim(dmKey,-50,-1);
+    }
+}
+
+
 
 //export them...
 module.exports = {
@@ -125,4 +142,5 @@ module.exports = {
     getDmFromRedis,
     clearDmFromRedis,
     getDmRoomKey,
+    batchSaveDmToRedis,
 }

@@ -1,7 +1,7 @@
 // Dependencies
 const DirectMessage = require("../models/direct-message.model");
 const db = require("../config/db");
-const { saveDmToRedis, getDmFromRedis,getDmRoomKey,clearDmFromRedis } = require("../redis/redis.helper");
+const { saveDmToRedis, getDmFromRedis,getDmRoomKey,clearDmFromRedis, batchSaveDmToRedis } = require("../redis/redis.helper");
 
 
 
@@ -200,13 +200,13 @@ const handleDmEvents = (io, socket) => {
       }
 
       // Validation: Both users must be online in the same room
-      const bothInRoom = await areBothInRoom(roomId, user.id, targetUserId, io);
-      if (!bothInRoom) {
-        return socket.emit("socket:error", {
-          code: "DM_PERMISSION_DENIED",
-          message: "Both users must be in the same room to start DM",
-        });
-      }
+      // const bothInRoom = await areBothInRoom(roomId, user.id, targetUserId, io);
+      // if (!bothInRoom) {
+      //   return socket.emit("socket:error", {
+      //     code: "DM_PERMISSION_DENIED",
+      //     message: "Both users must be in the same room to start DM",
+      //   });
+      // }
 
       // Fetch target user details
       const targetUser = await fetchTargetUser(targetUserId);
@@ -228,7 +228,7 @@ const handleDmEvents = (io, socket) => {
       }else{
         messages = await fetchDmHistory(user.id, targetUserId);
         for(const msg of messages){
-          await saveDmToRedis(user.id,targetUserId,msg);
+          await batchSaveDmToRedis(user.id,targetUserId,msg);
         }
         console.log(`Loaded ${messages.length} DMs from PSQL`);
       }
@@ -277,13 +277,13 @@ const handleDmEvents = (io, socket) => {
         return socket.emit("socket:error", { code: "INVALID_TARGET", message: "Cannot message yourself" });
       }
 
-      const bothInRoom = await areBothInRoom(roomId, user.id, targetUserId, io);
-      if (!bothInRoom) {
-        return socket.emit("socket:error", {
-          code: "DM_PERMISSION_DENIED",
-          message: "Both users must be in the same room to send DM",
-        });
-      }
+      // const bothInRoom = await areBothInRoom(roomId, user.id, targetUserId, io);
+      // if (!bothInRoom) {
+      //   return socket.emit("socket:error", {
+      //     code: "DM_PERMISSION_DENIED",
+      //     message: "Both users must be in the same room to send DM",
+      //   });
+      // }
 
       //first handle save to radis....
 
