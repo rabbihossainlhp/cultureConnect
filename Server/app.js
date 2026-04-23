@@ -115,6 +115,8 @@ server.listen(port, async()=>{
     console.log(`your app is running on http://localhost:${port}`);
     try{
         await User.createUserTable();
+        await User.alterTableAddJoinedRoom();
+        await User.initializeJoinedRoomsForExistingUsers();
         await Rooms.createRoomsTable();
         await Rooms.alterTableAddPasswordCol();
         await RoomMessage.createRoomMessageTable();

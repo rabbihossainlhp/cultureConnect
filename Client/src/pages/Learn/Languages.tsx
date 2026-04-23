@@ -1,286 +1,151 @@
-import { BookOpen, Globe, Sparkles, Trophy, Users, Clock, BarChart3, Award, ArrowRight, Star } from "lucide-react";
+import { Rocket, Zap, Globe, Award, Users, BookOpen, Volume2, Brain, Sparkles } from "lucide-react";
 import { useState } from "react";
 
-const languages = [
-  {
-    id: 1,
-    name: "Spanish",
-    flag: "🇪🇸",
-    learners: "45,324",
-    difficulty: "Beginner",
-    duration: "12 weeks",
-    lessons: 48,
-    progress: 40,
-    rating: 4.8,
-    description: "Learn Spanish from basics to conversational fluency",
-    modules: ["Alphabet & Basics", "Common Phrases", "Grammar", "Conversation", "Culture"],
-  },
-  {
-    id: 2,
-    name: "French",
-    flag: "🇫🇷",
-    learners: "38,912",
-    difficulty: "Beginner",
-    duration: "12 weeks",
-    lessons: 48,
-    progress: 0,
-    rating: 4.9,
-    description: "Master the language of love and culture",
-    modules: ["Pronunciation", "Vocabulary", "Phrases", "Advanced Grammar", "Literature"],
-  },
-  {
-    id: 3,
-    name: "Mandarin Chinese",
-    flag: "🇨🇳",
-    learners: "32,456",
-    difficulty: "Advanced",
-    duration: "16 weeks",
-    lessons: 64,
-    progress: 0,
-    rating: 4.7,
-    description: "Explore the world's most spoken language",
-    modules: ["Chinese Characters", "Tones", "Daily Conversation", "Business Chinese", "Poetry"],
-  },
-  {
-    id: 4,
-    name: "Japanese",
-    flag: "🇯🇵",
-    learners: "28,765",
-    difficulty: "Intermediate",
-    duration: "14 weeks",
-    lessons: 56,
-    progress: 25,
-    rating: 4.8,
-    description: "Learn Japanese hiragana, katakana, and kanji",
-    modules: ["Hiragana & Katakana", "Kanji Basics", "Polite Speech", "Advanced Grammar", "Media & Culture"],
-  },
-  {
-    id: 5,
-    name: "Arabic",
-    flag: "🇸🇦",
-    learners: "24,567",
-    difficulty: "Advanced",
-    duration: "16 weeks",
-    lessons: 64,
-    progress: 0,
-    rating: 4.6,
-    description: "Discover the beauty of the Arabic language",
-    modules: ["Arabic Alphabet", "Grammar", "Dialects", "Religious Texts", "Modern Arabic"],
-  },
-  {
-    id: 6,
-    name: "Hindi",
-    flag: "🇮🇳",
-    learners: "19,234",
-    difficulty: "Intermediate",
-    duration: "14 weeks",
-    lessons: 56,
-    progress: 15,
-    rating: 4.7,
-    description: "Learn Hindi and connect with Indian culture",
-    modules: ["Devanagari Script", "Basic Grammar", "Conversation", "Business Hindi", "Cinema Language"],
-  },
-];
-
-const benefits = [
-  { icon: Globe, title: "Global Connection", desc: "Connect with native speakers worldwide" },
-  { icon: Users, title: "Community Learning", desc: "Learn together with thousands of students" },
-  { icon: Trophy, title: "Certification", desc: "Earn recognized language certificates" },
-  { icon: Star, title: "Expert Teachers", desc: "Learn from native speakers and linguists" },
-];
-
 export default function Languages() {
-  const [selectedLanguage, setSelectedLanguage] = useState<number | null>(null);
-  const [filterDifficulty, setFilterDifficulty] = useState("All");
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
 
-  const filteredLanguages = languages.filter(
-    (lang) => filterDifficulty === "All" || lang.difficulty === filterDifficulty
-  );
-
-  const selectedLangData = selectedLanguage ? languages.find((l) => l.id === selectedLanguage) : null;
+  const handleNotify = () => {
+    if (email.trim()) {
+      setSubscribed(true);
+      setTimeout(() => {
+        setEmail("");
+        setSubscribed(false);
+      }, 3000);
+    }
+  };
 
   return (
-    <section className="w-full py-12 px-4 sm:px-6 lg:px-10 bg-linear-to-b from-orange-50 via-white to-pink-50 min-h-screen">
-      <div className="max-w-7xl mx-auto pt-20">
-        {/* HERO SECTION */}
-        <div className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-4 py-1 text-xs font-semibold tracking-wider text-orange-600 mb-4">
-            <Sparkles className="h-4 w-4" />
-            LANGUAGE COURSES
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-slate-800 mb-4">
-            Learn Languages From Native Speakers
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Master new languages through interactive lessons, live conversations, and cultural immersion. Start your language journey today!
-          </p>
-        </div>
+    <section className="min-h-[calc(100vh-88px)] bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-20 px-4 md:px-8">
+      <div className="mx-auto max-w-6xl">
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+          {/* Left Section */}
+          <div className="space-y-8">
+            {/* Coming Soon Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-sm">
+              <Rocket size={16} />
+              Coming Soon
+            </div>
 
-        {/* BENEFITS */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-12">
-          {benefits.map((benefit, idx) => {
-            const Icon = benefit.icon;
-            return (
-              <div key={idx} className="rounded-xl border border-white/80 bg-white/90 p-5 text-center">
-                <Icon className="h-8 w-8 text-orange-500 mx-auto mb-3" />
-                <h3 className="font-bold text-slate-800 mb-1">{benefit.title}</h3>
-                <p className="text-sm text-slate-600">{benefit.desc}</p>
+            {/* Title */}
+            <div>
+              <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-4">
+                Master World
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-cyan-600">
+                  Languages
+                </span>
+              </h1>
+              <p className="text-xl text-slate-600">
+                Learn 50+ languages with native speakers. Interactive lessons, real conversations, and cultural immersion all in one platform.
+              </p>
+            </div>
+
+            {/* Features Preview */}
+            <div className="space-y-4">
+              {[
+                { icon: Volume2, title: "Native Pronunciations", desc: "Learn from authentic pronunciation guides" },
+                { icon: Brain, title: "Adaptive Learning", desc: "AI-powered lessons tailored to your pace" },
+                { icon: Globe, title: "Cultural Context", desc: "Learn language within cultural frameworks" },
+              ].map((feature, idx) => (
+                <div key={idx} className="flex gap-4 items-start">
+                  <div className="p-3 rounded-lg bg-emerald-100 text-emerald-600 flex-shrink-0">
+                    <feature.icon size={24} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900">{feature.title}</p>
+                    <p className="text-sm text-slate-600">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Newsletter Signup */}
+            <div className="pt-4">
+              <p className="text-sm font-semibold text-slate-700 mb-3">Get early access when we launch</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleNotify()}
+                  className="flex-1 px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-emerald-500 focus:outline-none text-sm"
+                />
+                <button
+                  onClick={handleNotify}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-semibold rounded-lg hover:shadow-lg transition transform hover:scale-105"
+                >
+                  Notify Me
+                </button>
               </div>
-            );
-          })}
-        </div>
+              {subscribed && (
+                <p className="text-green-600 text-sm mt-2 font-semibold">✓ Added to waitlist!</p>
+              )}
+            </div>
+          </div>
 
-        {/* FILTERS */}
-        <div className="mb-8 flex flex-wrap gap-3">
-          {["All", "Beginner", "Intermediate", "Advanced"].map((level) => (
-            <button
-              key={level}
-              onClick={() => setFilterDifficulty(level)}
-              className={`px-6 py-2 rounded-full font-semibold transition ${
-                filterDifficulty === level
-                  ? "bg-gradient-to-r from-orange-500 to-pink-500 text-white"
-                  : "bg-white border border-white/80 text-slate-700 hover:border-orange-300"
-              }`}
-            >
-              {level}
-            </button>
-          ))}
-        </div>
+          {/* Right Section - Visual */}
+          <div className="relative h-96 md:h-full flex items-center justify-center">
+            {/* Animated Background Circles */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: "2s" }}></div>
+            </div>
 
-        {/* LANGUAGE CARDS */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
-          {filteredLanguages.map((lang) => (
-            <div
-              key={lang.id}
-              onClick={() => setSelectedLanguage(lang.id)}
-              className={`rounded-2xl border cursor-pointer transition-all ${
-                selectedLanguage === lang.id
-                  ? "border-orange-500 bg-white shadow-xl"
-                  : "border-white/80 bg-white/90 hover:shadow-lg"
-              }`}
-            >
-              {/* Header */}
-              <div className="p-6 border-b border-slate-200">
-                <div className="flex items-center justify-between mb-4">
+            {/* Language Cards */}
+            <div className="relative space-y-6 w-full px-6">
+              {[
+                { flag: "🇪🇸", name: "Spanish", level: "Beginner", learners: "45K+" },
+                { flag: "🇫🇷", name: "French", level: "Beginner", learners: "38K+" },
+                { flag: "🇯🇵", name: "Japanese", level: "Intermediate", learners: "29K+" },
+              ].map((lang, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl bg-white/80 backdrop-blur border border-white/50 shadow-lg transform hover:scale-105 transition"
+                  style={{ transform: `translateX(${idx * 20}px)` }}
+                >
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl">{lang.flag}</span>
-                    <div>
-                      <h3 className="font-bold text-slate-800 text-lg">{lang.name}</h3>
+                    <span className="text-3xl">{lang.flag}</span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-800 text-sm">{lang.name}</p>
                       <p className="text-xs text-slate-500">{lang.learners} learners</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-bold text-slate-800">{lang.rating}</span>
+                    <Sparkles size={16} className="text-amber-400" />
                   </div>
                 </div>
-                <p className="text-sm text-slate-600">{lang.description}</p>
-              </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-              {/* Stats */}
-              <div className="p-6 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Clock className="h-4 w-4 text-orange-500" />
-                    {lang.duration}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <BookOpen className="h-4 w-4 text-blue-500" />
-                    {lang.lessons} lessons
-                  </div>
-                </div>
-
-                {/* Difficulty Badge */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      lang.difficulty === "Beginner"
-                        ? "bg-green-100 text-green-700"
-                        : lang.difficulty === "Intermediate"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {lang.difficulty}
-                  </span>
-                </div>
-
-                {/* Progress Bar if started */}
-                {lang.progress > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-slate-600">Progress</span>
-                      <span className="text-xs font-bold text-orange-600">{lang.progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-orange-500 to-pink-500 h-2 rounded-full transition-all"
-                        style={{ width: `${lang.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Button */}
-                <button
-                  className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
-                    lang.progress > 0
-                      ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
-                      : "bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:shadow-lg"
-                  }`}
-                >
-                  {lang.progress > 0 ? "Continue" : "Start Course"}
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
+        {/* Statistics Section */}
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-4 md:gap-8 bg-white/60 backdrop-blur rounded-2xl p-8 border border-white/50">
+          {[
+            { icon: BookOpen, label: "Languages", value: "50+" },
+            { icon: Users, label: "Learners", value: "100K+" },
+            { icon: Award, label: "Lessons", value: "5000+" },
+            { icon: Zap, label: "Hours", value: "200+" },
+          ].map((stat, idx) => (
+            <div key={idx} className="text-center">
+              <stat.icon className="mx-auto mb-2 text-emerald-600" size={32} />
+              <p className="text-2xl md:text-3xl font-bold text-slate-900">{stat.value}</p>
+              <p className="text-xs md:text-sm text-slate-600">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* DETAILED VIEW */}
-        {selectedLangData && (
-          <div className="rounded-2xl border border-orange-500 bg-white overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-8 text-white">
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-5xl">{selectedLangData.flag}</span>
-                <div>
-                  <h2 className="text-3xl font-bold">{selectedLangData.name}</h2>
-                  <p className="text-orange-100">{selectedLangData.description}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8">
-              <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-orange-500" />
-                Course Modules
-              </h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                {selectedLangData.modules.map((module, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-lg bg-gradient-to-r from-orange-50 to-pink-50 p-4 border border-orange-200 flex items-center gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-                      {idx + 1}
-                    </div>
-                    <span className="font-semibold text-slate-800">{module}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex gap-4">
-                <button className="btn bg-gradient-to-r from-orange-500 to-pink-500 text-white border-none hover:shadow-lg">
-                  <Award className="h-5 w-5" />
-                  Enroll Now
-                </button>
-                <button className="btn btn-outline border-orange-300 text-orange-600 hover:bg-orange-50">
-                  Learn More
-                </button>
-              </div>
+        {/* Bottom CTA */}
+        <div className="text-center mt-16">
+          <p className="text-slate-600 mb-4">
+            Estimated Launch: <span className="font-bold text-emerald-600">Q3 2026</span>
+          </p>
+          <div className="inline-block">
+            <div className="px-6 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-semibold animate-pulse">
+              Breaking language barriers worldwide... 🌍
             </div>
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

@@ -21,7 +21,6 @@ export interface SignupResponse{
 }
 
 
-
 export interface LoginPayload{
     email:string;
     password:string;
@@ -37,8 +36,6 @@ export interface LoginResponse{
         country:string;
     }
 }
-
-
 
 
 export interface MeResponse{
@@ -73,16 +70,12 @@ export interface VerifyOtpResponse {
 
 
 
-
-
-
 export interface Room {
   id: string;
   name: string;
   language: string;
   members: number;
 }
-
 
 
 
@@ -108,6 +101,7 @@ export interface CreateRoomPayload {
   language: string;
   visibility: "public" | "private";
   capacity: number;
+  password?:string;
 }
 
 export interface CreateRoomResponse {
