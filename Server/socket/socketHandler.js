@@ -37,7 +37,7 @@ const handleSocketEvents = (io,socket) =>{
 
 
     //auto-rejoin functionality...
-    socket.on('connect', async()=>{
+    (async ()=>{
         try{
             console.log(`User${user.username} is connected, checking joined_rooms..`);
             
@@ -55,15 +55,26 @@ const handleSocketEvents = (io,socket) =>{
 
                             const redisMessages = await getMessagesFromRedis(roomId);
 
+                            let recentMessages;
                             if(redisMessages.length>0){
+                                recentMessages = redisMessages;
                                 console.log(`Auto rejoined ${user.username} to room ${roomId} (${redisMessages.length} msgs from redis..)`);
                             }else{
-                                const recentMessages = await fetchRecentMessages(roomId);
+                                recentMessages = await fetchRecentMessages(roomId);
                                 for(let msg of recentMessages){
                                     await saveMessageToRedis(roomId,msg);
                                 }
                                 console.log(`Auto rejoined ${user.username} to room ${roomId} (${recentMessages.length} msgs from DB..)`);
                             }
+
+                            const onlineUsers = await fetchOnlineUsers(roomId);
+
+                            socket.emit('room:joined', {
+                                room,
+                                users:onlineUsers,
+                                messages:recentMessages
+                            })
+
 
                             socket.to(String(roomId)).emit('room:user_joined',{
                                 userId:user.id,
@@ -84,7 +95,7 @@ const handleSocketEvents = (io,socket) =>{
         }catch(err){
             console.error('Error on socket connect: ', err.message);
         }
-    })
+    })();
 
 
     
@@ -279,6 +290,38 @@ const handleSocketEvents = (io,socket) =>{
         };
     });
     
+
+
+    socket.on('room:load',async(payload)=>{
+        try{
+            const roomId = normalizedRoomId(payload?.roomId);
+            if(!roomId){
+                return socket.emit('socket:error',{
+                    code:'INVALID ROOM',
+                    message:'Invalid room id'
+                })
+            }
+
+            const redisMessages = await getMessagesFromRedis(roomId);
+            let recentMessages;
+
+            if(redisMessages.length>0){
+                recentMessages = redisMessages;
+            }else{
+                recentMessages = await fetchRecentMessages(roomId);
+                for(let msg of recentMessages){
+                    await saveMessageToRedis(roomId,msg);
+                }
+            }
+
+            socket.emit('room:messages',{roomId,messages:recentMessages});
+            console.log(`Loaded ${recentMessages.length} messages for room ${roomId}`);
+        }catch(err){
+            console.error('Error during socket-s room load',err.message);
+        }
+    })
+
+
     
     socket.on('disconnect', async(reason)=>{
         try{

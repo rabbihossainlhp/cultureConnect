@@ -115,21 +115,27 @@ const isParticipantsOnline = async(roomId,userId) =>{
 
 const addRommToUserJoinedRoom = async (userId,roomId) =>{
     console.log(`DEBUGGG: adding room ${roomId} (type: ${typeof roomId}) to user ${userId}`)
+    console.log(`User ID: ${userId}, Room ID: ${roomId}`);
+
     const query = `
         UPDATE users
         SET joined_rooms = array_append(
-            COALESCE(joined_rooms, '{}'::integer[]),
+            COALESCE(array_remove(joined_rooms, NULL), ARRAY[]::integer[]),
             $1::integer
         )
         WHERE id=$2
-        AND NOT $1::integer= ANY(COALESCE(joined_rooms, '{}'::integer[]))
+        AND NOT $1::integer = ANY(COALESCE(array_remove(joined_rooms,NULL), ARRAY[]::integer[]))
         RETURNING joined_rooms
     `;
 
     try{
         const result = await db.query(query,[roomId,userId]);
         if(result.rows.length>0){
-            console.log(`Room ${roomId} added to user ${userId}'s joined_rooms:`,result.rows[0].joined_rooms)
+            console.log(`Room ${roomId} added to user ${userId}'s joined_rooms:`,result.rows[0].joined_rooms);
+            return result.rows[0].joined_rooms;
+        }else{
+            console.warn('Update returned 0 rows --> no error thrown');
+            return null;
         }
     }catch(err){
         console.error('Error adding room to joined_rooms column',err.message);

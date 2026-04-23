@@ -117,6 +117,7 @@ server.listen(port, async()=>{
         await User.createUserTable();
         await User.alterTableAddJoinedRoom();
         await User.initializeJoinedRoomsForExistingUsers();
+        await User.removeJoinedRoomsDuplicates();
         await Rooms.createRoomsTable();
         await Rooms.alterTableAddPasswordCol();
         await RoomMessage.createRoomMessageTable();

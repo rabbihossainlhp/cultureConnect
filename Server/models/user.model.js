@@ -60,6 +60,40 @@ const User = {
         }catch(err){
             console.error('initialize join room for existing user erro....: ',err.message);
         }
+    },
+
+
+    async cleanupJoinedRoomsNulls(){
+        const query = `UPDATE users 
+                        SET joined_rooms = array_remove(joined_rooms,NULL)
+                        WHERE joined_rooms IS NOT NULL
+                        RETURNING id,joined_rooms
+                        `;
+        
+        try{
+            const result = await db.query(query);
+            console.log(`Clean up ${result.rowCount} users' joined_rooms arrays`);
+        }catch(err){
+            console.error('Clean up error..: ',err.message);
+        }
+    },
+
+
+    async removeJoinedRoomsDuplicates(){
+        const query = `UPDATE users 
+                        SET joined_rooms = (
+                            SELECT ARRAY(SELECT DISTINCT UNNEST(joined_rooms) ORDER BY 1)
+                        )
+                        WHERE joined_rooms IS NOT NULL
+                        RETURNING id,joined_rooms
+                        `;
+        
+        try{
+            const result = await db.query(query);
+            console.log(`Clean up ${result.rowCount} users' joined_rooms arrays`);
+        }catch(err){
+            console.error('Clean up error..: ',err.message);
+        }
     }
 
     
