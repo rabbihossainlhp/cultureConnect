@@ -2,123 +2,25 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const { getMessagesFromRedis, saveMessageToRedis } = require('../redis/redis.helper');
+const {
+    ensureActiveRoom, 
+    setParticipantsOnline, 
+    getUserJoinedRooms, 
+    fetchRecentMessages, 
+    removeRoomFromUserJoinedRooms, 
+    setParticipantsOffline, 
+    normalizedRoomId, 
+    normalizedText, 
+    fetchOnlineUsers, 
+    isParticipantsOnline,
+    addRommToUserJoinedRoom
+} = require('./socket.helper');
+
+
+
 
 
 const MAX_MESSAGE_LENGTH = 500;
-
-
-const normalizedRoomId = (value) =>{
-    const n = Number(value);
-    return Number.isInteger(n) && n>0? n : null;
-};
-
-
-const normalizedText = (value) =>{
-    if(typeof value !== 'string') return '';
-    return value.trim();
-};
-
-
-const ensureActiveRoom = async (roomId) =>{
-    const roomQuery = `
-        SELECT id, slug, name, language, visibility, status, host_user_id
-        FROM rooms
-        WHERE id=$1 AND  status='active'
-        LIMIT 1
-    `;
-
-    const roomResult = await db.query(roomQuery,[roomId]);
-    return roomResult.rows[0] || null;
-};
-
-
-const fetchOnlineUsers = async(roomId)=>{
-    const usersQuery = `
-        SELECT 
-        u.id AS "userId",
-        u.username,
-        u.country,
-        u.profile_picture
-
-        FROM room_participants rp JOIN users u ON u.id = rp.user_id
-        WHERE rp.room_id = $1
-        AND rp.is_online = true
-        ORDER BY u.username ASC
-    `;
-
-    const usersResult = await db.query(usersQuery,[roomId]);
-    return usersResult.rows;
-};
-
-
-const fetchRecentMessages = async(roomId) =>{
-    const messageQuery = `
-        SELECT 
-        rm.id,
-        rm.room_id AS "roomId",
-        rm.message_text AS text,
-        rm.created_at AS timestamp,
-        u.id AS "userId",
-        u.username
-        
-        FROM room_messages rm
-        JOIN users u ON u.id = rm.sender_user_id
-        WHERE rm.room_id = $1
-        AND rm.deleted_at IS NULL
-        ORDER BY rm.created_at DESC
-        LIMIT 20
-    `;
-
-    const result = await db.query(messageQuery,[roomId]);
-    return result.rows.reverse();
-};
-
-
-const setParticipantsOnline = async (roomId,userId) =>{
-    const onlineUserQuery = `
-        INSERT INTO room_participants (room_id,user_id,role,is_online,joined_at,left_at)
-        VALUES ($1,$2, 'member', true, CURRENT_TIMESTAMP,NULL)
-        ON CONFLICT (room_id, user_id)
-        DO UPDATE SET 
-            is_online = true,
-            left_at = NULL
-    `;
-
-    await db.query(onlineUserQuery,[roomId,userId]);
-};
-
-
-const setParticipantsOffline = async (roomId,userId) =>{
-    const offlineUserQuery = `
-        UPDATE room_participants
-        SET is_online = false,
-            left_at = CURRENT_TIMESTAMP
-        WHERE room_id = $1
-        AND user_id = $2
-    `;
-
-    await db.query(offlineUserQuery,[roomId,userId]);
-};
-
-
-
-const isParticipantsOnline = async(roomId,userId) =>{
-    const membershipsQuery = `
-        SELECT 1
-        FROM room_participants
-        WHERE room_id = $1
-        AND user_id = $2
-        AND is_online = true
-        LIMIT 1
-    `;
-
-    const result = await db.query(membershipsQuery,[roomId,userId]);
-    return result.rows.length > 0;
-};
-
-
-
-
 
 
 
@@ -132,6 +34,59 @@ const handleSocketEvents = (io,socket) =>{
         socket.disconnect(true);
         return;
     }
+
+
+    //auto-rejoin functionality...
+    socket.on('connect', async()=>{
+        try{
+            console.log(`User${user.username} is connected, checking joined_rooms..`);
+            
+            const joinedRooms = await getUserJoinedRooms(user.id);
+
+            if(joinedRooms.length>0){
+                console.log(`auto   rejoining user to rooms: [${joinedRooms.join(', ')}]`);
+                
+                for(let roomId of joinedRooms){
+                    try{
+                        const room = await ensureActiveRoom(roomId);
+                        if(room){
+                            await setParticipantsOnline(roomId,user.id);
+                            socket.join(String(roomId));
+
+                            const redisMessages = await getMessagesFromRedis(roomId);
+
+                            if(redisMessages.length>0){
+                                console.log(`Auto rejoined ${user.username} to room ${roomId} (${redisMessages.length} msgs from redis..)`);
+                            }else{
+                                const recentMessages = await fetchRecentMessages(roomId);
+                                for(let msg of recentMessages){
+                                    await saveMessageToRedis(roomId,msg);
+                                }
+                                console.log(`Auto rejoined ${user.username} to room ${roomId} (${recentMessages.length} msgs from DB..)`);
+                            }
+
+                            socket.to(String(roomId)).emit('room:user_joined',{
+                                userId:user.id,
+                                username:user.username,
+                                country:user.country,
+                            });
+                        }else{
+                            console.log(`Room ${roomId} is inactive room, removing   from joined_rooms`);
+                            await removeRoomFromUserJoinedRooms(user.id,roomId)
+                        }
+                    }catch(err){
+                        console.error('Error auto-rejoining room ', err.message);
+                    }
+                }
+            }else{
+                console.log('User has no joined room yet');
+            }
+        }catch(err){
+            console.error('Error on socket connect: ', err.message);
+        }
+    })
+
+
     
     socket.on('room:join', async(payload)=>{
         try{
@@ -172,6 +127,9 @@ const handleSocketEvents = (io,socket) =>{
             }
 
             await setParticipantsOnline(roomId, user.id);
+            
+            await addRommToUserJoinedRoom(user.id,roomId);
+
             socket.join(String(roomId));
 
             const redisMessages = await getMessagesFromRedis(roomId);
@@ -193,6 +151,7 @@ const handleSocketEvents = (io,socket) =>{
             const [onlineUsers] = await Promise.all([
                 fetchOnlineUsers(roomId),
             ]);
+
 
 
             socket.emit('room:joined',{
@@ -225,6 +184,9 @@ const handleSocketEvents = (io,socket) =>{
             };
 
             await setParticipantsOffline(roomId,user.id);
+
+            await removeRoomFromUserJoinedRooms(user.id,roomId);
+
             socket.leave(String(roomId));
 
             socket.to(String(roomId)).emit('room:user_left',{

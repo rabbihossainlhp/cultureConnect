@@ -211,13 +211,7 @@ function LiveRooms() {
     socket.on("connect", () => {
       setIsConnected(true);
       setSocketError("");
-
-      // Rejoin last room after reconnect/refresh
-      const savedRoomId = localStorage.getItem("lastJoinedRoomId");
-      if (savedRoomId) {
-        const roomId = Number(savedRoomId);
-        socket.emit("room:join", { roomId });
-      }
+      // ✅ Backend handles auto-rejoin via joined_rooms array
     });
 
     socket.on("disconnect", () => {
@@ -391,7 +385,6 @@ function LiveRooms() {
     setDmTarget(null);
     setDmMessages([]);
     resetRoomUi();
-    localStorage.setItem("lastJoinedRoomId", String(room.roomId));
     socket.emit("room:join", { roomId: room.roomId });
   };
 
@@ -408,7 +401,6 @@ function LiveRooms() {
     setDmTarget(null);
     setDmMessages([]);
     resetRoomUi();
-    localStorage.setItem("lastJoinedRoomId", String(room.roomId));
     socket.emit("room:join", { roomId: room.roomId, password });
     setShowPasswordModal(false);
     setJoinPassword("");
@@ -475,7 +467,6 @@ function LiveRooms() {
     setChatMode("room");
     setDmTarget(null);
     setShowRoomMenu(false);
-    localStorage.removeItem("lastJoinedRoomId");
   };
 
   const leaveRoomFromCard = (roomId: number) => {
@@ -499,7 +490,6 @@ function LiveRooms() {
       setRoomUsers([]);
       setChatMode("room");
       setDmTarget(null);
-      localStorage.removeItem("lastJoinedRoomId");
     }
   };
 
