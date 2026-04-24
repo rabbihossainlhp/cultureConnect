@@ -16,7 +16,7 @@ const getProfileController = async (req,res) =>{
     
     return res.status(200).json({
         success:true,
-        data:{username:user.username, email:user.email, country:user.country,bio:user.bio,native_language:user.native_language,profile_picture:user.profile_picture},
+        data:{id:user.id, username:user.username, email:user.email, country:user.country,bio:user.bio,native_language:user.native_language,profile_picture:user.profile_picture},
         message:"User request Successfully completed.",
     })
 
