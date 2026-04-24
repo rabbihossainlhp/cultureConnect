@@ -146,6 +146,12 @@ export interface DirectMessageResponse extends DirectMessage {
   receiver_user_id?: number;
   message_text?: string;
   created_at?: string;
+  sender_username?: string;
+  sender_country?: string;
+  sender_profile_picture?: string;
+  receiver_username?: string;
+  receiver_country?: string;
+  receiver_profile_picture?: string;
 }
 
 export interface DmTargetUser {

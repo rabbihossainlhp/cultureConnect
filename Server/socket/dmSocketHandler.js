@@ -119,10 +119,23 @@ const fetchTargetUser = async (userId) => {
 const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
     try{
         const query = `
-            SELECT id,sender_user_id,receiver_user_id, message_text,created_at 
-            FROM direct_messages
-            WHERE (sender_user_id = $1 AND receiver_user_id = $2)
-                OR (sender_user_id = $2 AND receiver_user_id = $1)
+            SELECT 
+            dm.id,
+            dm.sender_user_id,
+            u_sender.username as sender_username,
+            u_sender.country as sender_country,
+            u_sender.profile_picture as sender_profile_picture,
+            dm.receiver_user_id,
+            u_receiver.username as receiver_username,
+            u_receiver.country as receiver_country,
+            u_receiver.profile_picture as receiver_profile_picture,
+            dm.message_text,
+            dm.created_at
+            FROM direct_messages dm
+            LEFT JOIN users u_sender ON dm.sender_user_id = u_sender.id
+            LEFT JOIN users u_receiver ON dm.receiver_user_id = u_receiver.id
+            WHERE (dm.sender_user_id = $1 AND dm.receiver_user_id = $2)
+                OR (dm.sender_user_id = $2 AND dm.receiver_user_id = $1)
             ORDER BY created_at ASC
             LIMIT $3
         `;
@@ -253,6 +266,7 @@ const handleDmEvents = (io, socket) => {
       const roomId = normalizedRoomId(payload?.roomId);
       const targetUserId = normalizedUserId(payload?.targetUserId);
       const text = normalizedText(payload?.text);
+      const receiverUser = await fetchTargetUser(targetUserId);
 
       // Validation: Valid room and user
       if (!roomId) {
@@ -290,7 +304,13 @@ const handleDmEvents = (io, socket) => {
       const msseageData = {
         id: Date.now() + Math.random(),
         sender_user_id: user.id,
+        sender_username:user.username,
+        sender_country:user.country,
+        sender_profile_picture:user.profile_picture || "",
         receiver_user_id: targetUserId,
+        receiver_username:receiverUser?.username || `User ${targetUserId}`,
+        receiver_country:receiverUser?.country || "",
+        receiver_profile_picture: receiverUser?.profile_picture || "",
         message_text: text,
         created_at: new Date(),
       }
@@ -308,7 +328,6 @@ const handleDmEvents = (io, socket) => {
 
       // Broadcast to DM room
       const dmRoomKey = getDmRoomKey(user.id, targetUserId);
-      socket.join(dmRoomKey);
       io.to(String(dmRoomKey)).emit('dm:new',msseageData);
 
 
