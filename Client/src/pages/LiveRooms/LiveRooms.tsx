@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Hash } from "lucide-react";
+import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { createRoomApiHandler, getRoomListApiHandler } from "../../services/api.service";
 import type { DirectMessage, DirectMessageResponse, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
 import type { DmHistoryPayload, RoomJoinedPayload, UiRoom } from "../../types";
+import { NotificationCenter, useNotifications } from "./components/NotificationCenter";
+import { handleDmNewMessage } from "./socket/dmMessageHandler";
 
 const toSlug = (value: string) =>
   value
@@ -60,7 +62,11 @@ function LiveRooms() {
   const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
   const [dmConversations, setDmConversations] = useState<Map<number, { user: DmTargetUser; lastMessage: string; timestamp: string }>>(() => {
     try {
-      const saved = localStorage.getItem("dmConversations");
+      // ✅ CRITICAL FIX: Namespace localStorage with userId to prevent cross-user data leakage
+      const userId = user?.id;
+      if (!userId) return new Map();
+      
+      const saved = localStorage.getItem(`dmConversations_${userId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         return new Map(parsed);
@@ -72,7 +78,11 @@ function LiveRooms() {
   });
   const [unreadDmCount, setUnreadDmCount] = useState<Set<number>>(() => {
     try {
-      const saved = localStorage.getItem("unreadDmCount");
+      // ✅ CRITICAL FIX: Namespace localStorage with userId
+      const userId = user?.id;
+      if (!userId) return new Set();
+      
+      const saved = localStorage.getItem(`unreadDmCount_${userId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         return new Set(parsed);
@@ -85,6 +95,9 @@ function LiveRooms() {
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
   const [viewMode, setViewMode] = useState<"rooms" | "dms">("rooms");
+
+  // Notification management
+  const { notifications, addNotification, dismissNotification } = useNotifications();
 
   // Socket and UI state
   const [isConnected, setIsConnected] = useState(false);
@@ -106,6 +119,7 @@ function LiveRooms() {
   const [pendingRoomJoin, setPendingRoomJoin] = useState<UiRoom | null>(null);
   const [joinPassword, setJoinPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -116,6 +130,8 @@ function LiveRooms() {
   const dmMessagesRef = useRef<DirectMessage[]>([]);
   const dmConversationsRef = useRef<Map<number, { user: DmTargetUser; lastMessage: string; timestamp: string }>>(new Map());
   const unreadDmCountRef = useRef<Set<number>>(new Set());
+  const selectedRoomIdRef = useRef<number | null>(null);
+  const chatModeRef = useRef<'room' | 'dm'>('room');
 
   // ✅ Sync refs with state to keep them fresh
   useEffect(() => {
@@ -138,6 +154,19 @@ function LiveRooms() {
     unreadDmCountRef.current = unreadDmCount;
   }, [unreadDmCount]);
 
+  useEffect(() => {
+    if (selectedUiRoomId) {
+      const selected = rooms.find(r => r.id === selectedUiRoomId);
+      selectedRoomIdRef.current = selected ? selected.roomId : null;
+    } else {
+      selectedRoomIdRef.current = null;
+    }
+  }, [selectedUiRoomId, rooms]);
+
+  useEffect(() => {
+    chatModeRef.current = chatMode;
+  }, [chatMode]);
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       setTimeout(() => {
@@ -156,21 +185,29 @@ function LiveRooms() {
 
   useEffect(() => {
     try {
+      // ✅ CRITICAL FIX: Namespace localStorage with userId to prevent cross-user data leakage
+      const userId = user?.id;
+      if (!userId) return;
+      
       const data = Array.from(dmConversations.entries());
-      localStorage.setItem("dmConversations", JSON.stringify(data));
+      localStorage.setItem(`dmConversations_${userId}`, JSON.stringify(data));
     } catch (error) {
       console.error("Error saving dmConversations to localStorage:", error);
     }
-  }, [dmConversations]);
+  }, [dmConversations, user?.id]);
 
   useEffect(() => {
     try {
+      // ✅ CRITICAL FIX: Namespace localStorage with userId
+      const userId = user?.id;
+      if (!userId) return;
+      
       const data = Array.from(unreadDmCount);
-      localStorage.setItem("unreadDmCount", JSON.stringify(data));
+      localStorage.setItem(`unreadDmCount_${userId}`, JSON.stringify(data));
     } catch (error) {
       console.error("Error saving unreadDmCount to localStorage:", error);
     }
-  }, [unreadDmCount]);
+  }, [unreadDmCount, user?.id]);
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedUiRoomId) || null,
@@ -269,8 +306,16 @@ function LiveRooms() {
     });
 
     socket.on("room:messages", (payload: { roomId: number; messages: Message[] }) => {
-      setMessages(payload.messages || []);
-      setSocketError("");
+      // ✅ CRITICAL FIX: Only load messages if they belong to the currently selected room
+      const currentRoomId = selectedRoomIdRef.current;
+      const incomingRoomId = payload.roomId;
+      
+      // Only update if the incoming messages are for the currently selected room
+      if (currentRoomId === incomingRoomId) {
+        setMessages(payload.messages || []);
+        setSocketError("");
+      }
+      // If messages are for a different room, ignore them
     });
 
     socket.on("room:user_joined", (joinedUser: RoomUser) => {
@@ -285,7 +330,14 @@ function LiveRooms() {
     });
 
     socket.on("chat:new", (incoming: Message) => {
-      setMessages((prev) => [...prev, incoming]);
+      // ✅ CRITICAL FIX: Only add messages that belong to the currently selected room
+      const currentRoomId = selectedRoomIdRef.current;
+      const incomingRoomId = incoming.roomId ? Number(incoming.roomId) : null;
+      
+      if (chatModeRef.current === "room" && currentRoomId === incomingRoomId) {
+        setMessages((prev) => [...prev, incoming]);
+      }
+      // If message is from a different room, it's not shown (user gets notification only)
     });
 
     socket.on("dm:history", (payload: DmHistoryPayload) => {
@@ -299,7 +351,11 @@ function LiveRooms() {
         setUnreadDmCount((prev) => {
           const next = new Set(prev);
           next.delete(Number(payload.target.userId));
-          localStorage.setItem("unreadDmCount", JSON.stringify([...next]));
+          // ✅ CRITICAL FIX: Namespace localStorage with userId
+          const userId = user?.id;
+          if (userId) {
+            localStorage.setItem(`unreadDmCount_${userId}`, JSON.stringify([...next]));
+          }
           return next;
         });
       }
@@ -320,102 +376,20 @@ function LiveRooms() {
       }
     });
 
-    // ✅ FIXED: dm:new handler – uses refs to get current dmTarget and user ID
+    // ✅ FIXED: dm:new handler – uses new modular handler function with toast notifications
     socket.on("dm:new", (incoming: DirectMessageResponse) => {
-      console.log("New DM received:", incoming);
-
-      let senderUserId: number | null = incoming.sender_user_id || incoming.senderUserId;
-      senderUserId = senderUserId ? Number(senderUserId) : null;
-
-      let receiverUserId: number | null = incoming.receiver_user_id || incoming.receiverUserId;
-      receiverUserId = receiverUserId ? Number(receiverUserId) : null;
-
-      let currentUserId = currentUserIdRef.current; // use the ref instead of closure variable
-      if (isNaN(currentUserId)) {
-        // fallback inference (optional)
-        const target = dmTargetRef.current;
-        if (target) {
-          const targetUserId = Number(target.userId);
-          if (senderUserId === targetUserId && receiverUserId) currentUserId = receiverUserId;
-          else if (receiverUserId === targetUserId && senderUserId) currentUserId = senderUserId;
-        }
-      }
-
-      const isCurrentUserReceiver = receiverUserId === currentUserId;
-      const otherUserId = isCurrentUserReceiver ? senderUserId : receiverUserId;
-      const currentDmTarget = dmTargetRef.current; // ← fresh value
-
-      const isViewingThisConversation =
-        currentDmTarget &&
-        (currentDmTarget.userId === String(otherUserId) || Number(currentDmTarget.userId) === otherUserId);
-
-      const messageText = incoming.message_text || incoming.text || "Message";
-      const timestamp = incoming.created_at || incoming.timestamp || new Date().toISOString();
-
-      const senderUserInfo: DmTargetUser = {
-        userId: senderUserId ?? 0,
-        username: incoming.sender_username || `User ${senderUserId}`,
-        country: incoming.sender_country || "",
-        profile_picture: incoming.sender_profile_picture || "",
-      };
-
-      const receiverUserInfo: DmTargetUser = {
-        userId: receiverUserId ?? 0,
-        username: incoming.receiver_username || `User ${receiverUserId}`,
-        country: incoming.receiver_country || "",
-        profile_picture: incoming.receiver_profile_picture || "",
-      };
-
-      // Add message to current DM window if open for this user
-      if (isViewingThisConversation) {
-        setDmMessages((prev) => [...prev, incoming]);
-      }
-
-      // Update conversation list on the left panel
-      if (otherUserId !== null) {
-        setDmConversations((prev) => {
-          const updated = new Map(prev);
-          const userToStore = isCurrentUserReceiver ? senderUserInfo : receiverUserInfo;
-          if (!updated.has(otherUserId)) {
-            updated.set(otherUserId, {
-              user: userToStore,
-              lastMessage: messageText,
-              timestamp: timestamp,
-            });
-          } else {
-            const existing = updated.get(otherUserId)!;
-            updated.set(otherUserId, {
-              ...existing,
-              lastMessage: messageText,
-              timestamp: timestamp,
-            });
-          }
-          return updated;
-        });
-      }
-
-      // Manage unread badge & alert (alert only when NOT viewing)
-      if (otherUserId !== null && isCurrentUserReceiver && !isViewingThisConversation) {
-        setUnreadDmCount((prev) => {
-          const next = new Set(prev);
-          next.add(otherUserId);
-          localStorage.setItem("unreadDmCount", JSON.stringify([...next]));
-          return next;
-        });
-
-        const senderName = senderUserInfo.username || `User ${senderUserId}`;
-        const notificationMsg = `📨 New message from ${senderName}: "${messageText.substring(0, 50)}${messageText.length > 50 ? "..." : ""}"`;
-        console.log("🔔 SHOWING NOTIFICATION:", notificationMsg);
-        alert(notificationMsg);
-      } else if (otherUserId !== null && isViewingThisConversation && isCurrentUserReceiver) {
-        // Immediately clear unread badge for this conversation
-        setUnreadDmCount((prev) => {
-          const next = new Set(prev);
-          next.delete(otherUserId);
-          localStorage.setItem("unreadDmCount", JSON.stringify([...next]));
-          return next;
-        });
-      }
+      handleDmNewMessage({
+        incoming,
+        dmTargetRef,
+        currentUserIdRef,
+        dmMessagesRef,
+        setDmMessages,
+        setDmConversations,
+        setUnreadDmCount,
+        onNotification: (senderName, messageText, metadata) => {
+          addNotification(senderName, messageText, "dm", metadata);
+        },
+      });
     });
 
     socketRef.current = socket;
@@ -495,7 +469,11 @@ function LiveRooms() {
     setUnreadDmCount((prev) => {
       const next = new Set(prev);
       next.delete(Number(target.userId));
-      localStorage.setItem("unreadDmCount", JSON.stringify([...next]));
+      // ✅ CRITICAL FIX: Namespace localStorage with userId
+      const userId = user?.id;
+      if (userId) {
+        localStorage.setItem(`unreadDmCount_${userId}`, JSON.stringify([...next]));
+      }
       return next;
     });
 
@@ -662,68 +640,133 @@ function LiveRooms() {
   };
 
   return (
-    <section className="h-[calc(100vh-88px)] bg-slate-900 flex flex-col overflow-hidden">
-      <div className="flex-1 grid grid-cols-1 overflow-hidden md:grid-cols-[320px_1fr]">
-        {/* SIDEBAR */}
-        <aside className="border-r border-slate-700 bg-slate-800 overflow-hidden flex flex-col">
-          <div className="border-b border-slate-700 p-3 space-y-2 shrink-0">
-            <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2">
+    <section className="fixed inset-0 top-22 bg-slate-50 flex flex-col overflow-hidden">
+      {/* Toast Notification Center */}
+      <NotificationCenter
+        notifications={notifications}
+        onDismiss={dismissNotification}
+        onClickNotification={(notification) => {
+          // When user clicks a DM notification, open that conversation
+          if (notification.type === "dm") {
+            const senderId = Number(notification.metadata?.senderId);
+            if (!isNaN(senderId)) {
+              setViewMode("dms");
+              setDmTarget(dmConversations.get(senderId)?.user || null);
+              setSidebarOpen(true);
+            }
+          }
+          dismissNotification(notification.id);
+        }}
+      />
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* SIDEBAR - Responsive */}
+        <aside className={`${
+          sidebarOpen ? "w-full sm:w-80" : "w-0"
+        } bg-white border-r border-slate-200 flex flex-col transition-all duration-300 overflow-hidden`}>
+          {/* Header with DM/Rooms tabs */}
+          <div className="border-b border-slate-200 p-4 shrink-0">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-lg font-bold text-slate-900">Chats</h1>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="sm:hidden p-1 hover:bg-slate-100 rounded-lg"
+              >
+                <X size={20} className="text-slate-600" />
+              </button>
+            </div>
+
+            {/* Search bar */}
+            <div className="flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5">
               <Search size={16} className="text-slate-400" />
               <input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search rooms"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-500 text-white"
+                placeholder="Search..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 text-slate-900"
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-2">
+          {/* Rooms/DMs tabs */}
+          <div className="flex border-b border-slate-200 shrink-0">
+            <button
+              onClick={() => setViewMode("rooms")}
+              className={`flex-1 px-4 py-3 text-sm font-semibold border-b-2 transition ${
+                viewMode === "rooms"
+                  ? "border-blue-500 text-blue-600 bg-blue-50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Rooms
+            </button>
+            <button
+              onClick={() => setViewMode("dms")}
+              className={`flex-1 px-4 py-3 text-sm font-semibold border-b-2 transition relative ${
+                viewMode === "dms"
+                  ? "border-blue-500 text-blue-600 bg-blue-50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Messages
+              {unreadDmCount.size > 0 && (
+                <span className="absolute top-2 right-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
+                  {unreadDmCount.size}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Create/Refresh buttons for rooms */}
+          {viewMode === "rooms" && (
+            <div className="border-b border-slate-200 p-3 flex gap-2 shrink-0">
               <button
                 onClick={() => setShowCreate((prev) => !prev)}
-                className="inline-flex items-center justify-center gap-1 rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-700"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
-                <Plus size={14} />
+                <Plus size={16} />
                 Create
               </button>
               <button
                 onClick={() => void fetchRooms()}
                 disabled={loadingRooms}
-                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-60"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
-                <RefreshCcw size={14} />
-                Refresh
+                <RefreshCcw size={16} className={loadingRooms ? "animate-spin" : ""} />
               </button>
             </div>
-          </div>
+          )}
 
-          {showCreate && (
-            <div className="border-b border-slate-700 bg-slate-700/50 p-3 space-y-2 shrink-0">
+          {/* Create Room Form */}
+          {showCreate && viewMode === "rooms" && (
+            <div className="border-b border-slate-200 bg-blue-50 p-4 space-y-3 shrink-0">
               <input
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
                 placeholder="Room Name"
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
               />
               <input
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 placeholder="Language"
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
               />
               <div className="grid grid-cols-2 gap-2">
                 <select
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value as "public" | "private")}
-                  className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="public">public</option>
-                  <option value="private">private</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
                 </select>
                 <input
+                  type="number"
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
                   placeholder="Capacity"
-                  className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               {visibility === "private" && (
@@ -732,288 +775,288 @@ function LiveRooms() {
                   value={roomPassword}
                   onChange={(e) => setRoomPassword(e.target.value)}
                   placeholder="Room Password"
-                  className="w-full rounded-lg border border-orange-500 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
                 />
               )}
               <button
                 onClick={createRoom}
                 disabled={creating}
-                className="w-full rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:opacity-60"
+                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
               >
-                {creating ? "Creating..." : "Create"}
+                {creating ? "Creating..." : "Create Room"}
               </button>
             </div>
           )}
 
-          <div className="border-b border-slate-700 bg-slate-800 flex gap-0 shrink-0">
-            <button
-              onClick={() => setViewMode("rooms")}
-              className={`flex-1 px-3 py-2 text-xs font-semibold border-b-2 transition ${
-                viewMode === "rooms"
-                  ? "border-orange-500 text-orange-400 bg-slate-700/50"
-                  : "border-transparent text-slate-400 hover:text-slate-300"
-              }`}
-            >
-              Rooms
-            </button>
-            <button
-              onClick={() => setViewMode("dms")}
-              className={`flex-1 px-3 py-2 text-xs font-semibold border-b-2 transition relative ${
-                viewMode === "dms"
-                  ? "border-purple-500 text-purple-400 bg-slate-700/50"
-                  : "border-transparent text-slate-400 hover:text-slate-300"
-              }`}
-            >
-              Messages
-              {unreadDmCount.size > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
-                  {unreadDmCount.size}
-                </span>
-              )}
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-2 min-h-0">
+          {/* Rooms/DMs List */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             {viewMode === "rooms" ? (
               <>
                 {filteredRooms.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                    No matching rooms. Try refresh or create one.
-                  </p>
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-slate-500">No rooms found</p>
+                    <p className="text-xs text-slate-400 mt-1">Create one to get started</p>
+                  </div>
                 ) : (
-                  filteredRooms.map((room) => {
-                    const active = room.id === selectedUiRoomId;
-                    const isJoined = joinedRoomIds.has(room.roomId);
-                    return (
-                      <div
-                        key={room.id}
-                        className={`mb-2 rounded-xl border p-3 transition ${
-                          active
-                            ? "border-orange-300 bg-orange-50"
-                            : "border-slate-200 bg-white hover:bg-slate-50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedUiRoomId(room.id);
-                              setChatMode("room");
-                              setDmTarget(null);
-                              setDmMessages([]);
-                              const socket = socketRef.current;
-                              if (socket && socket.connected && joinedRoomIds.has(room.roomId)) {
-                                socket.emit("room:load", { roomId: room.roomId });
-                              }
-                            }}
-                            className="flex-1 text-left"
-                          >
-                            <p className="text-sm font-bold text-slate-800">{room.name}</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="inline-flex items-center gap-1">
-                                <Hash size={12} /> {room.roomId}
-                              </span>
-                              <span>{room.language}</span>
-                              {room.slug ? <span>slug: {room.slug}</span> : null}
-                            </div>
-                          </button>
+                  <div className="space-y-1 p-2">
+                    {filteredRooms.map((room) => {
+                      const active = room.id === selectedUiRoomId;
+                      const isJoined = joinedRoomIds.has(room.roomId);
+                      return (
+                        <div
+                          key={room.id}
+                          className={`rounded-lg border p-3 transition cursor-pointer ${
+                            active
+                              ? "border-blue-300 bg-blue-50"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedUiRoomId(room.id);
+                                setChatMode("room");
+                                setDmTarget(null);
+                                setDmMessages([]);
+                                setSidebarOpen(false);
+                                const socket = socketRef.current;
+                                if (socket && socket.connected && joinedRoomIds.has(room.roomId)) {
+                                  socket.emit("room:load", { roomId: room.roomId });
+                                }
+                              }}
+                              className="flex-1 text-left"
+                            >
+                              <p className="text-sm font-semibold text-slate-900">{room.name}</p>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                <span>{room.language}</span>
+                                <span>•</span>
+                                <span>{room.visibility}</span>
+                              </div>
+                            </button>
 
-                          {isJoined ? (
-                            <button
-                              onClick={() => leaveRoomFromCard(room.roomId)}
-                              className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-red-100 text-red-700 hover:bg-red-200"
-                            >
-                              Leave
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => joinRoom(room)}
-                              className="rounded-lg px-3 py-1 text-xs font-semibold transition bg-orange-500 text-white hover:bg-orange-600"
-                            >
-                              Join
-                            </button>
-                          )}
+                            {isJoined ? (
+                              <button
+                                onClick={() => leaveRoomFromCard(room.roomId)}
+                                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold transition bg-red-100 text-red-700 hover:bg-red-200"
+                              >
+                                Leave
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => joinRoom(room)}
+                                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold transition bg-blue-500 text-white hover:bg-blue-600"
+                              >
+                                Join
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
               </>
             ) : (
               <>
                 {dmConversations.size === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-600 p-4 text-center">
-                    <MessageCircle size={24} className="mx-auto mb-2 text-slate-500" />
-                    <p className="text-xs text-slate-400">No messages yet</p>
+                  <div className="p-4 text-center">
+                    <MessageCircle size={32} className="mx-auto mb-2 text-slate-400" />
+                    <p className="text-sm text-slate-600 font-medium">No messages yet</p>
+                    <p className="text-xs text-slate-500 mt-1">Start a conversation</p>
                   </div>
                 ) : (
-                  Array.from(dmConversations.entries())
-                    .filter(([userId]) => {
-                      const currentUserId = Number(user?.id);
-                      const otherUserId = Number(userId);
-                      return otherUserId !== currentUserId && otherUserId > 0;
-                    })
-                    .map(([userId, conv]) => {
-                      const numericUserId = Number(userId);
-                      const isUnread = unreadDmCount.has(numericUserId);
-                      const isCurrentDmTarget =
-                        Number(dmTarget?.userId) === numericUserId || dmTarget?.userId === String(numericUserId);
-                      return (
-                        <button
-                          key={userId}
-                          onClick={() => openDmWithUser(conv.user)}
-                          className={`w-full mb-1 rounded-lg border p-2 text-left transition ${
-                            isCurrentDmTarget
-                              ? "border-purple-500 bg-purple-500/20"
-                              : isUnread
-                              ? "border-red-600/50 bg-red-900/20 hover:bg-red-900/30"
-                              : "border-slate-700 bg-slate-700/30 hover:bg-slate-700/50"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full overflow-hidden shrink-0">
-                              <img
-                                src={conv.user.profile_picture}
-                                alt={conv.user.username}
-                                className="w-full h-full object-cover"
-                              />
+                  <div className="space-y-1 p-2">
+                    {Array.from(dmConversations.entries())
+                      .filter(([userId]) => {
+                        const currentUserId = Number(user?.id);
+                        const otherUserId = Number(userId);
+                        return otherUserId !== currentUserId && otherUserId > 0;
+                      })
+                      .map(([userId, conv]) => {
+                        const numericUserId = Number(userId);
+                        const isUnread = unreadDmCount.has(numericUserId);
+                        const isCurrentDmTarget =
+                          Number(dmTarget?.userId) === numericUserId || dmTarget?.userId === String(numericUserId);
+                        return (
+                          <button
+                            key={userId}
+                            onClick={() => {
+                              openDmWithUser(conv.user);
+                              setSidebarOpen(false);
+                            }}
+                            className={`w-full rounded-lg border p-3 text-left transition ${
+                              isCurrentDmTarget
+                                ? "border-blue-300 bg-blue-50"
+                                : isUnread
+                                ? "border-red-200 bg-red-50 hover:bg-red-100"
+                                : "border-slate-200 bg-white hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-300">
+                                <img
+                                  src={conv.user.profile_picture}
+                                  alt={conv.user.username}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold truncate ${
+                                  isUnread ? "text-slate-900" : "text-slate-800"
+                                }`}>
+                                  {conv.user.username}
+                                </p>
+                                <p className={`text-xs truncate mt-0.5 ${
+                                  isUnread ? "text-slate-700 font-medium" : "text-slate-500"
+                                }`}>
+                                  {conv.lastMessage}
+                                </p>
+                              </div>
+                              {isUnread && (
+                                <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+                              )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-white truncate">{conv.user.username}</p>
-                              <p
-                                className={`text-[11px] truncate ${
-                                  isUnread ? "text-red-300 font-semibold" : "text-slate-400"
-                                }`}
-                              >
-                                {conv.lastMessage}
-                              </p>
-                            </div>
-                            {isUnread && <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>}
-                          </div>
-                        </button>
-                      );
-                    })
+                          </button>
+                        );
+                      })}
+                  </div>
                 )}
               </>
             )}
           </div>
         </aside>
 
-        {/* MAIN CHAT */}
-        <main className="bg-white overflow-hidden flex flex-col">
-          <div className="bg-white border-b border-slate-200 p-4 shrink-0">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold tracking-tight text-slate-900">
-                  {chatMode === "dm" && dmTarget
-                    ? `💬 ${dmTarget.username}`
-                    : selectedRoom
-                    ? selectedRoom.name
-                    : "CultureConnect"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  {chatMode === "dm" && dmTarget
-                    ? `${dmTarget.country}`
-                    : selectedRoom
-                    ? `${roomUsers.length} online • ${selectedRoom.language}`
-                    : "Select a room or DM to get started"}
-                </p>
-              </div>
-
-              {chatMode === "room" && selectedRoom && (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowUsersDropdown(!showUsersDropdown)}
-                      className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 transition"
-                      title="Online users"
-                    >
-                      <Users size={20} className="text-slate-700" />
-                    </button>
-
-                    {showUsersDropdown && chatMode === "room" && (
-                      <div className="absolute top-12 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-50">
-                        <div className="p-2 border-b border-slate-100">
-                          <p className="text-xs font-semibold text-slate-600 px-2">
-                            Online Users ({roomUsers.length})
-                          </p>
-                        </div>
-                        <div className="max-h-75 overflow-y-auto">
-                          {roomUsers.length === 0 ? (
-                            <p className="text-xs text-slate-500 p-3">No users online</p>
-                          ) : (
-                            roomUsers
-                              .filter((ru) => Number(ru.userId) !== Number(user?.id))
-                              .map((ru) => (
-                                <button
-                                  key={`${ru.userId}-${ru.username}`}
-                                  onClick={() => {
-                                    openDmWithUser(ru);
-                                    setShowUsersDropdown(false);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 transition flex items-center gap-2"
-                                >
-                                  <div className="w-6 h-6 rounded-full overflow-hidden">
-                                    <img
-                                      src={ru.profile_picture}
-                                      alt={ru.username}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-slate-800">{ru.username}</p>
-                                    <p className="text-xs text-slate-500">{ru.country}</p>
-                                  </div>
-                                </button>
-                              ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowRoomMenu(!showRoomMenu)}
-                      className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 transition"
-                      title="Room options"
-                    >
-                      <MoreVertical size={20} className="text-slate-700" />
-                    </button>
-
-                    {showRoomMenu && (
-                      <div className="absolute top-12 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-40">
-                        <button
-                          onClick={leaveRoom}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
-                        >
-                          <X size={14} />
-                          Leave Room
-                        </button>
-                      </div>
-                    )}
+        {/* MAIN CHAT AREA - Click to show sidebar on mobile */}
+        <main className="flex-1 flex flex-col bg-slate-50 overflow-hidden relative">
+          {/* MAIN CHAT */}
+          <div className="bg-white overflow-visible flex flex-col">
+            {/* Header */}
+            <div className="border-b border-slate-200 bg-white p-4 shrink-0 relative z-40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="sm:hidden p-1 hover:bg-slate-100 rounded-lg"
+                  >
+                    <Menu size={20} className="text-slate-600" />
+                  </button>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">
+                      {chatMode === "dm" && dmTarget
+                        ? dmTarget.username
+                        : selectedRoom?.name
+                        ? selectedRoom.name
+                        : "CultureConnect"}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {chatMode === "dm" && dmTarget
+                        ? dmTarget.country
+                        : selectedRoom
+                        ? `${roomUsers.length} online • ${selectedRoom.language}`
+                        : "Select a chat to begin"}
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {chatMode === "dm" && (
-                <button onClick={closeDm} className="rounded-full p-2 hover:bg-slate-200">
-                  <X size={20} className="text-slate-700" />
-                </button>
-              )}
+                <div className="flex items-center gap-2">
+                  {chatMode === "room" && selectedRoom && (
+                    <div className="flex items-center gap-1">
+                      <div className="relative z-50">
+                        <button
+                          onClick={() => setShowUsersDropdown(!showUsersDropdown)}
+                          className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-slate-100 transition"
+                          title="Online users"
+                        >
+                          <Users size={18} className="text-slate-600" />
+                        </button>
+
+                        {showUsersDropdown && chatMode === "room" && (
+                          <div className="absolute top-10 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-9999 min-w-60">
+                            <div className="p-3 border-b border-slate-100">
+                              <p className="text-xs font-semibold text-slate-700">
+                                Online Users ({roomUsers.length})
+                              </p>
+                            </div>
+                            <div className="max-h-72 overflow-y-auto">
+                              {roomUsers.length === 0 ? (
+                                <p className="text-xs text-slate-500 p-3">No users online</p>
+                              ) : (
+                                roomUsers
+                                  .filter((ru) => Number(ru.userId) !== Number(user?.id))
+                                  .map((ru) => (
+                                    <button
+                                      key={`${ru.userId}-${ru.username}`}
+                                      onClick={() => {
+                                        openDmWithUser(ru);
+                                        setShowUsersDropdown(false);
+                                        setSidebarOpen(false);
+                                      }}
+                                      className="w-full px-3 py-2.5 text-left text-sm hover:bg-blue-50 transition flex items-center gap-2"
+                                    >
+                                      <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                                        <img
+                                          src={ru.profile_picture}
+                                          alt={ru.username}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-slate-800 text-sm">{ru.username}</p>
+                                        <p className="text-xs text-slate-500">{ru.country}</p>
+                                      </div>
+                                    </button>
+                                  ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative z-50">
+                        <button
+                          onClick={() => setShowRoomMenu(!showRoomMenu)}
+                          className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-slate-100 transition"
+                          title="Room options"
+                        >
+                          <MoreVertical size={18} className="text-slate-600" />
+                        </button>
+
+                        {showRoomMenu && (
+                          <div className="absolute top-10 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-9999 min-w-48">
+                            <button
+                              onClick={leaveRoom}
+                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition font-medium"
+                            >
+                              Leave Room
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {chatMode === "dm" && (
+                    <button onClick={closeDm} className="p-1 hover:bg-slate-100 rounded-lg">
+                      <X size={18} className="text-slate-600" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            {socketError ? (
-              <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                {socketError}
-              </p>
-            ) : null}
           </div>
 
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-slate-50 p-4 space-y-3 min-h-0">
+          {/* Messages Container */}
+          {socketError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">
+              {socketError}
+            </div>
+          )}
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-slate-50 p-4 space-y-4 min-h-0">
             {!selectedRoom && !dmTarget ? (
               <div className="grid h-full place-items-center text-center">
                 <div>
-                  <div className="text-4xl mb-3">💬</div>
-                  <p className="text-lg font-semibold text-slate-600">Select a room or DM</p>
+                  <div className="text-5xl mb-4">💬</div>
+                  <p className="text-xl font-semibold text-slate-700">Select a chat to begin</p>
                   <p className="text-sm text-slate-500 mt-1">Pick from the left panel to start messaging</p>
                 </div>
               </div>
@@ -1074,9 +1117,9 @@ function LiveRooms() {
                   const senderName = isFromCurrentUser ? "You" : senderUsername;
 
                   return (
-                    <div key={`${msg.id}-${idx}`} className={`flex gap-2 ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
+                    <div key={`${msg.id}-${idx}`} className={`flex gap-3 ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
                       {!isFromCurrentUser && (
-                        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-300">
+                        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-slate-300 mt-0.5">
                           <img
                             src={displayAvatar}
                             alt={senderName}
@@ -1085,23 +1128,25 @@ function LiveRooms() {
                           />
                         </div>
                       )}
-                      <div className={`flex flex-col ${isFromCurrentUser ? "items-end" : "items-start"}`}>
-                        <p className={`text-xs font-semibold mb-1 ${isFromCurrentUser ? "text-orange-600" : "text-slate-700"}`}>
+                      <div className={`flex flex-col max-w-xs ${isFromCurrentUser ? "items-end" : "items-start"}`}>
+                        <p className={`text-xs font-medium mb-1 px-3 ${isFromCurrentUser ? "text-blue-600" : "text-slate-600"}`}>
                           {senderName}
                         </p>
                         <div
-                          className={`max-w-xs rounded-2xl px-4 py-2 shadow-sm ${
-                            isFromCurrentUser ? "bg-orange-500 text-white" : "bg-slate-200 text-slate-900"
+                          className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                            isFromCurrentUser
+                              ? "bg-blue-500 text-white rounded-br-none"
+                              : "bg-slate-200 text-slate-900 rounded-bl-none"
                           }`}
                         >
                           <p className="text-sm">{messageText}</p>
-                          <p className={`mt-1 text-[10px] ${isFromCurrentUser ? "text-orange-100" : "text-slate-600"}`}>
-                            {formatMessageTime((msg as DirectMessageResponse).created_at || msg.timestamp)}
-                          </p>
                         </div>
+                        <p className={`text-[11px] mt-1 px-3 ${isFromCurrentUser ? "text-slate-500" : "text-slate-500"}`}>
+                          {formatMessageTime((msg as DirectMessageResponse).created_at || msg.timestamp)}
+                        </p>
                       </div>
                       {isFromCurrentUser && (
-                        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-300">
+                        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-slate-300 mt-0.5">
                           <img
                             src={displayAvatar}
                             alt="You"
@@ -1117,23 +1162,26 @@ function LiveRooms() {
             ) : messages.length === 0 ? (
               <div className="grid h-full place-items-center text-slate-400 text-center">
                 <div>
-                  <div className="text-3xl mb-2">👋</div>
-                  <p className="text-sm">Be the first to say hello!</p>
+                  <div className="text-4xl mb-3">👋</div>
+                  <p className="text-sm font-medium">Be the first to say hello!</p>
+                  <p className="text-xs text-slate-500 mt-1">Start the conversation</p>
                 </div>
               </div>
             ) : (
               messages.map((msg, index) => {
                 const isFromCurrentUser = msg.username === user?.username;
                 return (
-                  <div key={`${msg.timestamp}-${index}`} className={`flex ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
+                  <div key={`${msg.timestamp}-${index}`} className={`flex gap-2 ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
-                        isFromCurrentUser ? "bg-slate-900 text-white" : "bg-white text-slate-800"
+                      className={`max-w-md rounded-2xl px-4 py-2.5 shadow-sm ${
+                        isFromCurrentUser
+                          ? "bg-blue-500 text-white rounded-br-none"
+                          : "bg-slate-200 text-slate-900 rounded-bl-none"
                       }`}
                     >
-                      <p className="mb-1 text-xs opacity-70">{msg.username}</p>
+                      <p className="mb-1 text-xs font-medium opacity-75">{msg.username}</p>
                       <p className="text-sm">{msg.text}</p>
-                      <p className="mt-1 text-[10px] opacity-60">{formatMessageTime(msg.timestamp)}</p>
+                      <p className="mt-1 text-[11px] opacity-70">{formatMessageTime(msg.timestamp)}</p>
                     </div>
                   </div>
                 );
@@ -1141,9 +1189,10 @@ function LiveRooms() {
             )}
           </div>
 
-          <div className="border-t border-slate-200 bg-white p-3 shrink-0">
+          {/* Input Area */}
+          <div className="border-t border-slate-200 bg-white p-4 shrink-0">
             {(selectedRoom && joinedRoomIds.has(selectedRoom.roomId)) || chatMode === "dm" ? (
-              <div className="flex gap-2">
+              <div className="flex gap-3 items-end">
                 <input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
@@ -1158,18 +1207,19 @@ function LiveRooms() {
                     }
                   }}
                   placeholder={chatMode === "dm" ? "Message..." : "Type a message..."}
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 />
                 <button
                   onClick={chatMode === "dm" ? sendDirectMessage : sendMessage}
                   disabled={!isConnected || !messageInput.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+                  title="Send message"
                 >
-                  <Send size={16} />
+                  <Send size={18} />
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 text-center">Join a room or select a DM to start messaging</p>
+              <p className="text-sm text-slate-500 text-center font-medium">Join a room or select a chat to start messaging</p>
             )}
           </div>
         </main>
