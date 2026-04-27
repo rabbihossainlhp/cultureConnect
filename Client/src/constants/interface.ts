@@ -118,7 +118,7 @@ export interface CreateRoomResponse {
 }
 
 export interface RoomListItem {
-  id: number;
+  id: string | number;  // ✅ API returns string, but we convert to number in mapping
   name: string;
   description: string | null;
   language: string;
