@@ -295,7 +295,10 @@ const handleSocketEvents = (io,socket) =>{
     socket.on('room:load',async(payload)=>{
         try{
             const roomId = normalizedRoomId(payload?.roomId);
+            console.log(` room:load request - roomId: ${roomId} (${typeof roomId}), socketId: ${socket.id}`);
+            
             if(!roomId){
+                console.log(`Invalid roomId: ${payload?.roomId}`);
                 return socket.emit('socket:error',{
                     code:'INVALID ROOM',
                     message:'Invalid room id'
@@ -307,20 +310,49 @@ const handleSocketEvents = (io,socket) =>{
 
             if(redisMessages.length>0){
                 recentMessages = redisMessages;
+                console.log(` Got ${recentMessages.length} messages from Redis for room ${roomId}`);
             }else{
                 recentMessages = await fetchRecentMessages(roomId);
+                console.log(` Got ${recentMessages.length} messages from DB for room ${roomId}`);
                 for(let msg of recentMessages){
                     await saveMessageToRedis(roomId,msg);
                 }
             }
 
+            console.log(` Emitting ${recentMessages.length} messages back to client (roomId: ${roomId}, type: ${typeof roomId})`);
             socket.emit('room:messages',{roomId,messages:recentMessages});
-            console.log(`Loaded ${recentMessages.length} messages for room ${roomId}`);
         }catch(err){
             console.error('Error during socket-s room load',err.message);
         }
     })
 
+
+
+    socket.on('dm:contacts',async(payload)=>{
+        try{
+            const cotactsListQuery = `
+                SELECT DISTINCT  
+                    CASE WHEN sender_user_id = $1 THEN receiver_user_id ELSE sender_user_id END as contact_user_id,
+                    (SELECT username FROM users WHERE id = CASE WHEN sender_user_id = $1 THEN receiver_user_id ELSE sender_user_id END) as username
+                FROM direct_messages
+                WHERE sender_user_id = $1 OR receiver_user_id = $1
+                ORDER BY contact_user_id DESC
+            `;
+
+            const listContacts = await db.query(cotactsListQuery,[user.id]);
+            if(listContacts.rows.length === 0){
+                return socket.emit('socket:error',{
+                    code:'NOT FOUND LIST',
+                    message:'Not found any contact list '
+                })
+            }
+
+            socket.emit('dm:contacts',listContacts.rows);
+            console.log(` contact list found: ${listContacts.length} contacts involed with this user`);
+        }catch(err){
+            console.error('Error during dm contacts list load',err.message);
+        }
+    })
 
     
     socket.on('disconnect', async(reason)=>{
