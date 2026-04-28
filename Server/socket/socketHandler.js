@@ -75,6 +75,14 @@ const handleSocketEvents = (io,socket) =>{
                                 messages:recentMessages
                             })
 
+                            const joinedRoomId = await db.query('SELECT joined_rooms FROM users WHERE id=$1',[user.id])
+
+                            socket.emit('user:info',{
+                                userId:user.id,
+                                username:user.username,
+                                joinedRoomsArray: joinedRoomId.rows[0]?.joined_rooms || [],
+                            })
+
 
                             socket.to(String(roomId)).emit('room:user_joined',{
                                 userId:user.id,

@@ -25,7 +25,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onClickNotification,
 }) => {
   return (
-    <div className="fixed top-20 right-4 z-40 space-y-2 max-w-sm">
+    <div className="fixed top-20 right-4 z-[9999] space-y-2 max-w-sm">
       {notifications.map((notification) => (
         <div
           key={notification.id}
@@ -86,10 +86,17 @@ export const useNotifications = () => {
       metadata,
     };
 
-    setNotifications((prev) => [...prev, notification]);
+    console.log(`📬 Adding notification from ${senderName}: "${messageText}" (id: ${id})`);
+    console.log(`📬 Current notifications count: ${notifications.length}`);
+    setNotifications((prev) => {
+      const updated = [...prev, notification];
+      console.log(`📬 Notifications updated: ${updated.length} total`);
+      return updated;
+    });
 
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
+      console.log(`⏰ Auto-dismissing notification ${id}`);
       dismissNotification(id);
     }, 5000);
 
