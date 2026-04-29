@@ -1,6 +1,14 @@
 //dependencies...
 const jwt = require('jsonwebtoken');
+const db = require('../../config/db');
+
+
+
 const firebaseAuthController = async(req,res) =>{
+
+    const authProvider = "google";
+
+
     try{
 
         if(!req.body || typeof req.body !=='object'){
@@ -10,15 +18,17 @@ const firebaseAuthController = async(req,res) =>{
             });
         }
 
-        const {username,email,password,country,nativeLanguage} = req.body;
+        const {username,email,country,nativeLanguage,profilePicture,firebaseUid} = req.body;
 
         
-        if(!username || !email || !password || !country || !nativeLanguage){
+        if(!username || !email){
             return res.status(400).json({
                 success:false,
                 message:"All the necessary fields are required"
             })
         }
+
+        console.log("reach userinfo: ",username,email,country,nativeLanguage,profilePicture)
 
         const isProd = process.env.NODE_ENV==='production';
         const cookieOptions = {
@@ -45,7 +55,7 @@ const firebaseAuthController = async(req,res) =>{
             return res.status(200).json({
                 success:true,
                 message:'User successfully logedIn user with google!.',
-                data: { username: existUser.rows[0].username, email: existUser.rows[0].email, country: existUser.rows[0].country }
+                data: {id:existUser.id, username: existUser.rows[0].username, email: existUser.rows[0].email, profilePicture: existUser.rows[0].profile_picture }
             })
         };
 
@@ -53,8 +63,8 @@ const firebaseAuthController = async(req,res) =>{
 
         //if not exist the user...
         const createUserQuery = `
-            INSERT INTO users(email,username,country,native_language)
-            VALUES($1,$3,$4,$5)
+            INSERT INTO users(email,username,country,native_language,profile_picture,auth_provider,firebase_uid)
+            VALUES($1,$2,$3,$4,$5,$6,$7)
             RETURNING id,email,username,country,native_language
         `;
 
@@ -62,15 +72,19 @@ const firebaseAuthController = async(req,res) =>{
             email,
             username,
             country || "Spain",
-            nativeLanguage || "Spanish"
+            nativeLanguage || "Spanish",
+            profilePicture? profilePicture : "",
+            authProvider,
+            firebaseUid
+
         ]);
 
         const createdUser = result.rows[0];
 
         const token = jwt.sign(
                 {
-                username:createdUser.rows[0].username,
-                email:createdUser.rows[0].email
+                username:createdUser.username,
+                email:createdUser.email
                 },
                 process.env.JWT_SECRET,
                 {expiresIn:'1d'}
@@ -81,7 +95,7 @@ const firebaseAuthController = async(req,res) =>{
         return res.status(200).json({
             success:true,
             message:'User successfully registerd user with google!.',
-            data: { username: createdUser.rows[0].username, email: createdUser.rows[0].email, country: createdUser.rows[0].country }
+            data: {id:createdUser.id, username: createdUser.username, email: createdUser.email, profilePicture: createdUser.profile_picture }
         })
 
 
