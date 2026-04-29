@@ -87,9 +87,11 @@ export default function Signup() {
     try{
       setIsLoading(true);
 
-      const user = await logSignControllerWithGoogle();
-      console.log("user info: ",user);
-      console.log("TOKEN ", user.getItToken())
+      const response = await logSignControllerWithGoogle();
+      if(response.success){
+        navigate("/dashboard")
+      }
+
     }catch(err){
       setToast({
         type:"error",
