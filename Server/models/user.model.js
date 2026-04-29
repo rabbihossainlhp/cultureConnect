@@ -94,6 +94,23 @@ const User = {
         }catch(err){
             console.error('Clean up error..: ',err.message);
         }
+    },
+
+
+    async alterTableHybridPassword (){
+        const query = `
+                    ALTER TABLE users 
+                        ALTER COLUMN password DROP NOT NULL,
+                        ADD COLUMN auth_provider TEXT DEFAULT 'local',
+                        ADD COLUMN firebase_uid TEXT UNIQUE;
+                `
+
+        try{
+            const result = await db.query(query);
+            console.log(`Password and UID col added ${result.fields} `);
+        }catch(err){
+            console.error('Password and UID col addederror..: ',err.message);
+        }
     }
 
     

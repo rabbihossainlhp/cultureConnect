@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import {motion,AnimatePresence} from "framer-motion";
 import { Eye, EyeOff, Globe, Globe2, Languages, Lock, Mail, UserRound , X} from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { sendOtpApiHandler } from "../../services/api.service";
+import { sendOtpApiHandler, } from "../../services/api.service";
 import type { ToastState } from "../../types";
+import { logSignControllerWithGoogle } from "../../services/firebase.service";
 
 
 const countries = [
@@ -79,6 +80,26 @@ export default function Signup() {
       setIsLoading(false);
     }
   };
+
+
+
+  const signupWithGoogle = async() =>{
+    try{
+      setIsLoading(true);
+
+      const user = await logSignControllerWithGoogle();
+      console.log("user info: ",user);
+      console.log("TOKEN ", user.getItToken())
+    }catch(err){
+      setToast({
+        type:"error",
+        message:err instanceof Error ? err.message : "Signup Faild"
+      })
+    }
+    finally{
+      setIsLoading(false);
+    }
+  }
 
 
 
@@ -269,12 +290,32 @@ export default function Signup() {
               I agree to the Terms and Privacy Policy.
             </label>
 
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
-            >
-              {isLoading? "Creating Account....":"Create Account"}
-            </button>
+        
+
+            <div className="mb-6 flex flex-col items-center">
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
+                  >
+                  {isLoading? "Creating Account....":"Create Account"}
+                </button>
+                    
+                  <span className="my-2 font-bold">OR</span>
+
+                <button
+                  type="button"
+                  onClick={signupWithGoogle}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 shadow-sm transition-all duration-200"
+                >
+                  <img
+                    src="https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw"
+                    alt="Google"
+                    className="w-5 h-5 mr-3"
+                    style={{ background: 'white', borderRadius: '2px' }}
+                  />
+                  <span className="text-gray-700 font-medium">Continue with Google</span>
+                </button>
+              </div>
           </form>
 
           <p className="mt-5 text-center text-sm text-slate-600">

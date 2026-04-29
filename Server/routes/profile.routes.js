@@ -1,4 +1,4 @@
-const {getProfileController,updateProfileController} = require('../controllers/profileController');
+const {getProfileController,updateProfileController} = require('../controllers/profile/profileController');
 const authMiddleware = require('../middleware/auth.middleware');
 const { uploadProfile } = require('../middleware/imageUpload.middleware');
 
