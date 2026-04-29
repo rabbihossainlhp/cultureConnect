@@ -67,6 +67,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 /**
  * Custom hook to manage toast notifications
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
 
@@ -76,6 +77,7 @@ export const useNotifications = () => {
     type: "dm" | "room" = "dm",
     metadata?: { senderId?: number | string; [key: string]: any }
   ) => {
+    // eslint-disable-next-line react-hooks/purity
     const id = `${Date.now()}-${Math.random()}`;
     const notification: ToastNotification = {
       id,
