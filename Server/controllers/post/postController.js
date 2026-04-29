@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../config/db');
+const db = require('../../config/db');
 
 
 const createPostController = async (req,res) =>{

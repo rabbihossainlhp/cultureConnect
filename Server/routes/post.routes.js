@@ -1,4 +1,4 @@
-const { createPostController, getPostController } = require("../controllers/postController");
+const { createPostController, getPostController } = require("../controllers//post/postController");
 const authMiddleware = require("../middleware/auth.middleware");
 
 const router = require("express").Router();

@@ -164,12 +164,32 @@ export default function Login() {
               </a>
             </div>
 
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
-            >
-              {isLoading ? "Signing in...":"Sign in"}
-            </button>
+
+
+            <div className="mb-6 flex flex-col items-center">
+                <button
+                    type="submit"
+                      className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
+                    >
+                      {isLoading ? "Signing in...":"Sign in"}
+                </button>
+                    
+                  <span className="my-2 font-bold">OR</span>
+
+                <button
+                  type="button"
+                  // onClick={signInWithGoogle}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 shadow-sm transition-all duration-200"
+                >
+                  <img
+                    src="https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw"
+                    alt="Google"
+                    className="w-5 h-5 mr-3"
+                    style={{ background: 'white', borderRadius: '2px' }}
+                  />
+                  <span className="text-gray-700 font-medium">Continue with Google</span>
+                </button>
+              </div>
           </form>
 
           <p className="mt-5 text-center text-sm text-slate-600">

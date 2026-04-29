@@ -1,5 +1,5 @@
 //dependencies...
-const db = require('../config/db');
+const db = require('../../config/db');
 const bcrypt = require('bcrypt');
 
 const createRoomController = async (req,res) =>{

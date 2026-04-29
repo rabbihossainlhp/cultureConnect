@@ -1,8 +1,8 @@
 //dependencies....
-const db = require('../config/db');
+const db = require('../../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const {sendOtpMail} = require('../config/email');
+const {sendOtpMail} = require('../../config/email');
 
 
 

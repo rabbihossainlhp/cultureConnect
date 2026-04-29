@@ -1,4 +1,4 @@
-const { createRoomController, getRoomListController } = require('../controllers/roomController');
+const { createRoomController, getRoomListController } = require('../controllers/room/roomController');
 const authMiddleware = require('../middleware/auth.middleware');
 
 const router = require('express').Router();
