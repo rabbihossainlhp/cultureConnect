@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 })
 
 //function to send mail..
-const sendOtpMail = async (email,otp) =>{
+const sendOtpMail = async (receipientEmail,otp) =>{
     try{
         //tamplate
         const mailTemplate = `
@@ -21,15 +21,15 @@ const sendOtpMail = async (email,otp) =>{
             <p>If you didn't request this please ignore it.</p>
         `;
 
-        const response = await resend.emails.send({
+        const mailOptions = {
             from:process.env.EMAIL_USER,
-            to:email,
+            to:receipientEmail,
             subject:'CultureConnect - Email Verification Code',
             html:mailTemplate,
-        });
+        };
 
-        console.log("Resend Response: ",response)
-        console.log("OTP sent to: ",email);
+        const result = await transporter.sendMail(mailOptions);
+        console.log("OTP sent successfully! ",result.messageId);
 
         return true;
     }catch(err){

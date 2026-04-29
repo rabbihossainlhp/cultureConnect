@@ -253,7 +253,7 @@ const verifyOtpController = async (req,res)=>{
             }
 
             //update attempt count even thats wrong
-            await db.query(`UPDATE email_verification_codes SET attempts=$1 WHEERE id=$2`,[newAttempts,verification.id]);
+            await db.query(`UPDATE email_verification_codes SET attempts=$1 WHERE id=$2`,[newAttempts,verification.id]);
 
             return res.status(401).json({
                 success:false,
@@ -271,7 +271,7 @@ const verifyOtpController = async (req,res)=>{
             RETURNING id,email,username,country,native_language
         `;
 
-        const result = await db.query(inserUserQuery,[
+        const result = await db.query(createUserQuery,[
             email,
             userData.password,
             userData.username,
