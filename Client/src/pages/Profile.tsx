@@ -81,6 +81,11 @@ export default function Profile() {
       // Create FormData for multipart form submission
       const updateFormData = new FormData();
 
+      //Add changed fields
+      if (formData.country !== originalData.country && formData.country.trim()) {
+        updateFormData.append('country', formData.country);
+      }
+
       // Add changed fields
       if (formData.nativeLanguage !== originalData.nativeLanguage && formData.nativeLanguage) {
         updateFormData.append('nativeLanguage', formData.nativeLanguage);
@@ -327,7 +332,7 @@ export default function Profile() {
                     <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
                   </div>
 
-                  {/* Country (Read-only) */}
+                  {/* Country  */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-2">
                       Country
@@ -336,10 +341,9 @@ export default function Profile() {
                       type="text"
                       name="country"
                       value={formData.country}
-                      disabled
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed"
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Country cannot be changed</p>
                   </div>
 
                   {/* Native Language */}

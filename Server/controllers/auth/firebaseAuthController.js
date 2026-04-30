@@ -35,10 +35,11 @@ const firebaseAuthController = async(req,res) =>{
             httpOnly:true,
             secure:isProd,
             sameSite:isProd?"none":"lax",
-            maxAge:24*60*60*1000
+            maxAge:24*60*60*1000,
+            path:"/"
         }
 
-        const checkUser = `SELECT id FROM users WHERE email = $1`;
+        const checkUser = `SELECT id,username,email,profile_picture FROM users WHERE email = $1`;
         const existUser = await db.query(checkUser,[email]);
         if(existUser.rows.length>0){
             const token = jwt.sign(
@@ -55,7 +56,7 @@ const firebaseAuthController = async(req,res) =>{
             return res.status(200).json({
                 success:true,
                 message:'User successfully logedIn user with google!.',
-                data: {id:existUser.id, username: existUser.rows[0].username, email: existUser.rows[0].email, profilePicture: existUser.rows[0].profile_picture }
+                data: {id:existUser.rows[0].id, username: existUser.rows[0].username, email: existUser.rows[0].email, profilePicture: existUser.rows[0].profile_picture }
             })
         };
 

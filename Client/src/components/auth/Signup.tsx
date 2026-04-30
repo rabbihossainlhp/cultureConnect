@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { sendOtpApiHandler, } from "../../services/api.service";
 import type { ToastState } from "../../types";
 import { logSignControllerWithGoogle } from "../../services/firebase.service";
+import { useAuth } from '../../contexts/AuthContext';
 
 
 const countries = [
@@ -44,6 +45,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [toast,setToast] = useState<ToastState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { refreshAuth } = useAuth();
   const navigate = useNavigate();
 
 
@@ -89,7 +91,8 @@ export default function Signup() {
 
       const response = await logSignControllerWithGoogle();
       if(response.success){
-        navigate("/dashboard")
+        await refreshAuth();
+        navigate("/dashboard",{replace:true})
       }
 
     }catch(err){
