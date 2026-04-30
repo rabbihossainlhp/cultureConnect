@@ -101,8 +101,8 @@ const User = {
         const query = `
                     ALTER TABLE users 
                         ALTER COLUMN password DROP NOT NULL,
-                        ADD COLUMN auth_provider TEXT DEFAULT 'local',
-                        ADD COLUMN firebase_uid TEXT UNIQUE;
+                        ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'local',
+                        ADD COLUMN IF NOT EXISTS firebase_uid TEXT UNIQUE;
                 `
 
         try{

@@ -118,7 +118,7 @@ export interface CreateRoomResponse {
 }
 
 export interface RoomListItem {
-  id: string | number;  // ✅ API returns string, but we convert to number in mapping
+  id: string | number;  
   name: string;
   description: string | null;
   language: string;
@@ -194,4 +194,31 @@ export interface PostListResponse {
   success: boolean;
   message: string;
   data?: PostItem[];
+}
+
+
+
+
+
+export interface FirebaseAuthResponse{
+  success:boolean,
+  messages:string,
+  data?:{
+    id:number,
+    username:string,
+    email:string,
+    profilePicture:string
+  }
+
+}
+
+
+
+export interface FirebaseAuthPayload {
+  username:string | null,
+  email:string | null,
+  profilePicture:string | null,
+  country:string,
+  nativeLanguage:string,
+  firebaseUid:string|number,
 }

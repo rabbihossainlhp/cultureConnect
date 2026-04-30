@@ -17,13 +17,14 @@ import type {
 
 
 
-const Base_api_url = import.meta.env.VITE_API_URI;
+export const Base_api_url = import.meta.env.VITE_API_URI;
 
 
 //api handler for signup
 export const signupApiHandler = async(payload:SingupPayload): Promise<SignupResponse> =>{
     const res = await fetch(`${Base_api_url}/auth/register`,{
         method:"POST",
+        credentials:"include",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(payload),
     });
