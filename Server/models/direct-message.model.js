@@ -29,6 +29,22 @@ const DirectMessage = {
             console.error('Error catching during create DM table');
             throw err;
         }
+    },
+
+
+    async addMediaAndTypeColumn(){
+        const query = `
+            ALTER TABLE direct_messages
+                ADD COLUMN IF NOT EXISTS message_type VARCHAR(25) NOT NULL DEFAULT 'text',
+                ADD COLUMN IF NOT EXISTS media_url TEXT
+        `;
+
+        try{
+            await db.query(query);
+            console.log("media_url and type column added in direct_message table")
+        }catch(err){
+            console.error("ADD media column error ondirect_message: ",err.message)
+        }
     }
 }
 

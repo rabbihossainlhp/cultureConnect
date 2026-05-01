@@ -122,9 +122,11 @@ server.listen(port, async()=>{
         await Rooms.createRoomsTable();
         await Rooms.alterTableAddPasswordCol();
         await RoomMessage.createRoomMessageTable();
+        await RoomMessage.addMediaColumn();
         await RoomParticipants.createRoomParticipantsTable();
         await CulturalPost.createCulturalPostTable();
         await DirectMessage.createDirectMessaeTable();
+        await DirectMessage.addMediaAndTypeColumn();
         await EmailVerificationCode.createEmailVerifyTable();
         console.log('Table created')
     }catch(err){

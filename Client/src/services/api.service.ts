@@ -180,6 +180,35 @@ export const updateProfileApiHandler = async (formData: FormData) => {
 };
 
 
+export interface UploadMessageMediaResponse {
+    success: boolean;
+    message: string;
+    mediaUrl?: string;
+    url?: string;
+    data?: {
+        mediaUrl?: string;
+        url?: string;
+    };
+}
+
+
+export const uploadMessageMediaApiHandler = async (formData: FormData): Promise<UploadMessageMediaResponse> => {
+    const res = await fetch(`${Base_api_url}/media/message-image`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+    });
+
+    const data = (await res.json()) as UploadMessageMediaResponse;
+
+    if (!res.ok) {
+        throw new Error(data.message || "Media upload failed");
+    }
+
+    return data;
+};
+
+
 // Send OTP api handler (signup)
 export const sendOtpApiHandler = async(payload: SingupPayload): Promise<SendOtpResponse> => {
     const res = await fetch(`${Base_api_url}/auth/register`, {

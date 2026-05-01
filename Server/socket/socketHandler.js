@@ -228,11 +228,14 @@ const handleSocketEvents = (io,socket) =>{
 
             const roomId = normalizedRoomId(payload?.roomId);
             const text = normalizedText(payload?.text);
+            const messageType = normalizedText(payload?.messageType);
+            const mediaUrl = normalizedText(payload?.mediaUrl);
+
 
             if(!roomId){
                 return socket.emit('socket:error', {code:"INVALID ROOM", message:'invalid room id'});
             }
-            if(!text){
+            if(!text && !mediaUrl){
                 return socket.emit('socket:error', {code:"EMPTY_MESSAGE", message:'message cannot be empty'});
             }
 
@@ -260,6 +263,10 @@ const handleSocketEvents = (io,socket) =>{
                 userId:user.id,
                 username:user.username,
                 text:text,
+                message_type:messageType,
+                media_url:mediaUrl,
+                messageType,
+                mediaUrl:mediaUrl,
                 timestamp:new Date()
             };
 
@@ -272,13 +279,13 @@ const handleSocketEvents = (io,socket) =>{
 
 
             const insertQuery = `
-                INSERT INTO room_messages(room_id, sender_user_id, message_text, message_type)
-                VALUES($1, $2, $3, 'text')
-                RETURNING id, room_id AS "roomId", message_text AS text, created_at AS timestamp
+                INSERT INTO room_messages(room_id, sender_user_id, message_text, message_type,media_url)
+                VALUES($1, $2, $3, $4,$5)
+                RETURNING id, room_id AS "roomId", message_text AS text, message_type,media_url, created_at AS timestamp
             `;
 
 
-            db.query(insertQuery,[roomId,user.id, text])
+            db.query(insertQuery,[roomId,user.id, text||"",messageType,mediaUrl || null])
                 .then((insertResult)=>{
                     const saved = insertResult.rows[0];
                     console.log(`Message permanently saved to DB: ${saved.id}`);
@@ -356,7 +363,7 @@ const handleSocketEvents = (io,socket) =>{
             }
 
             socket.emit('dm:contacts',listContacts.rows);
-            console.log(` contact list found: ${listContacts.length} contacts involed with this user`);
+            console.log(` contact list found: ${listContacts.rows.length} contacts involed with this user`);
         }catch(err){
             console.error('Error during dm contacts list load',err.message);
         }

@@ -83,7 +83,10 @@ export const handleDmNewMessage = ({
   console.log(`👁️ isViewingThisConversation: ${isViewingThisConversation}`);
   console.log(`👁️ currentDmTarget: ${currentDmTarget?.username} (userId: ${currentDmTarget?.userId}), otherUserId: ${otherUserId}`);
 
-  const messageText = incoming.message_text || incoming.text || "Message";
+  const isImageMessage = incoming.message_type === "image" || incoming.messageType === "image" || Boolean(incoming.media_url || incoming.mediaUrl);
+  const messageText = isImageMessage
+    ? (incoming.message_text || incoming.text || "📷 Image")
+    : (incoming.message_text || incoming.text || "Message");
   const timestamp = incoming.created_at || incoming.timestamp || new Date().toISOString();
 
   // Sender info
