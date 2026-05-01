@@ -5,7 +5,7 @@ const db = require('../../config/db');
 const createPostController = async (req,res) =>{
     const {title,description,tags,slug,readtime} = req.body;
     const authorId = req.user?.id;
-    const postImage = req.file? req.file.path : 'https://static.vecteezy.com/system/resources/thumbnails/008/695/917/small_2x/no-image-available-icon-simple-two-colors-template-for-no-image-or-picture-coming-soon-and-placeholder-illustration-isolated-on-white-background-vector.jpg';
+    const postImage = req.file?.path || 'https://static.vecteezy.com/system/resources/thumbnails/008/695/917/small_2x/no-image-available-icon-simple-two-colors-template-for-no-image-or-picture-coming-soon-and-placeholder-illustration-isolated-on-white-background-vector.jpg';
 
     if(!title || !description || !tags || !slug){
         return res.status(400).json({
@@ -15,13 +15,23 @@ const createPostController = async (req,res) =>{
     }
 
     try{
+        // Parse tags if it's a string (from FormData)
+        let tagsArray = tags;
+        if (typeof tags === 'string') {
+            try {
+                tagsArray = JSON.parse(tags);
+            } catch {
+                tagsArray = tags.split(',').map(t => t.trim());
+            }
+        }
+
         const postQuery = `
             INSERT INTO cultural_post(title,author_id,description,tags,slug,post_image,readtime)
             VALUES($1,$2,$3,$4,$5,$6,$7)
             RETURNING id,author_id,title,description,tags,slug,post_image
         `;
 
-        const createdPost = await db.query(postQuery,[title,authorId,description,tags,slug,postImage,readtime]);
+        const createdPost = await db.query(postQuery,[title,authorId,description,tagsArray,slug,postImage,readtime]);
 
         if(createdPost.rows.length === 0){
             return res.status(400).json({

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BookOpenText, PencilLine, Search, Sparkles, TrendingUp, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpenText, Image as ImageIcon, PencilLine, Search, Sparkles, TrendingUp, Users, X } from "lucide-react";
 import type { PostItem } from "../constants/interface";
 import ExploreCard from "../components/common/ExploreCard";
 import { createPostApiHandler, getPostListApiHandler } from "../services/api.service";
@@ -15,6 +15,7 @@ const initialFormState = {
   description: "",
   tags: "",
   slug: "",
+  image: null as File | null,
 };
 
 function Explore() {
@@ -23,6 +24,8 @@ function Explore() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(initialFormState);
 
   const postCount = useMemo(() => posts.length, [posts]);
@@ -54,6 +57,40 @@ function Explore() {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setToast({ type: "error", message: "Please select a valid image file." });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ type: "error", message: "Image size must be less than 5MB." });
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, image: file }));
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setForm((prev) => ({ ...prev, image: null }));
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleCreatePost = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -82,18 +119,26 @@ function Explore() {
 
     setIsSubmitting(true);
     try {
-      await createPostApiHandler({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        tags: tagsArray,
-        slug: normalizedSlug,
-        readtime,
+      const formData = new FormData();
+      formData.append("title", form.title.trim());
+      formData.append("description", form.description.trim());
+      formData.append("tags", JSON.stringify(tagsArray));
+      formData.append("slug", normalizedSlug);
+      formData.append("readtime", readtime);
+      
+      if (form.image) {
+        formData.append("image", form.image);
+      }
 
-      });
+      await createPostApiHandler(formData);
 
       setToast({ type: "success", message: "Post created successfully." });
       setIsCreateOpen(false);
       setForm(initialFormState);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       await loadPosts();
     } catch (err) {
       setToast({
@@ -232,6 +277,45 @@ function Explore() {
                   placeholder="auto-generated-if-empty"
                 />
               </label>
+
+              {/* Image Upload Section */}
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  Post Image (optional)
+                </label>
+                
+                {!imagePreview ? (
+                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <ImageIcon className="h-10 w-10 text-slate-400 mb-2" />
+                      <p className="text-sm text-slate-600 font-medium">Click to upload image</p>
+                      <p className="text-xs text-slate-500">PNG, JPG, JPEG, WEBP up to 5MB</p>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded-lg border border-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 p-1 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="sm:col-span-2">
                 <button
