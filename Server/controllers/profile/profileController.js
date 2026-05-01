@@ -28,8 +28,8 @@ const getProfileController = async (req,res) =>{
 //update user profile
 const updateProfileController = async (req,res) =>{
     const user = req.user;
-    const {password,newPassword,nativeLanguage,bio} = req.body;
-    const profilePicture = req.file? req.file.path : 'https://i.pinimg.com/736x/43/6c/ac/436cac73f5fff533999f31147c3538b7.jpg';
+    const {password,newPassword,country,nativeLanguage,bio} = req.body;
+    const profilePicture = req.file? req.file.path : user.profile_picture|| 'https://i.pinimg.com/736x/43/6c/ac/436cac73f5fff533999f31147c3538b7.jpg';
     
     try{
         if(newPassword){
@@ -68,17 +68,18 @@ const updateProfileController = async (req,res) =>{
         }
 
 
-        if(nativeLanguage || profilePicture || bio){
+        if(nativeLanguage || profilePicture || bio || country){
             const updateUserQuery = `
                 UPDATE users 
                     SET native_language = $1,
                         profile_picture = $2,
-                        bio = $3
-                WHERE id = $4 AND email = $5
+                        bio = $3,
+                        country = $4
+                WHERE id = $5 AND email = $6
                 RETURNING *
             `;
 
-            const updatedUser = await db.query(updateUserQuery,[nativeLanguage?nativeLanguage.trim():user.native_language, profilePicture?profilePicture:user.profile_picture,bio?bio:"",user.id,user.email]);
+            const updatedUser = await db.query(updateUserQuery,[nativeLanguage?nativeLanguage.trim():user.native_language, profilePicture?profilePicture:user.profile_picture,bio?bio:"", country?country.trim():user.country,user.id,user.email]);
             if(updatedUser.rows.length === 0){
                 return res.status(400).json({
                     success:false,

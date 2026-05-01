@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { loginApiHandler } from "../../services/api.service";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ToastState } from "../../types";
+import { logSignControllerWithGoogle } from "../../services/firebase.service";
 
 
 
@@ -46,6 +47,32 @@ export default function Login() {
     setIsLoading(false);
 
   }
+
+
+
+  const signInWithGoogle = async() =>{
+      try{
+        setIsLoading(true);
+  
+        const response = await logSignControllerWithGoogle();
+        if(response.success){
+        await refreshAuth();
+          navigate("/dashboard",{replace:true})
+        }
+  
+      }catch(err){
+        setToast({
+          type:"error",
+          message:err instanceof Error ? err.message : "Signup Faild"
+        })
+      }
+      finally{
+        setIsLoading(false);
+      }
+    }
+
+
+
 
 
 
@@ -178,7 +205,7 @@ export default function Login() {
 
                 <button
                   type="button"
-                  // onClick={signInWithGoogle}
+                  onClick={signInWithGoogle}
                   className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 shadow-sm transition-all duration-200"
                 >
                   <img
