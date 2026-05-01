@@ -126,13 +126,17 @@ export const getRoomListApiHandler = async(): Promise<RoomListResponse> => {
 
 // create post api handler
 export const createPostApiHandler = async (
-    payload: CreatePostPayload
+    payload: CreatePostPayload | FormData
 ): Promise<CreatePostResponse> => {
+    const isFormData = payload instanceof FormData;
+    
     const res = await fetch(`${Base_api_url}/post/create`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        ...(isFormData
+            ? {}
+            : { headers: { "Content-Type": "application/json" } }),
+        body: isFormData ? payload : JSON.stringify(payload),
     });
 
     const data = (await res.json()) as CreatePostResponse;
