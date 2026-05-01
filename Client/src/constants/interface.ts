@@ -85,6 +85,9 @@ export interface Message {
   userId: string | number;
   username: string;
   text: string;
+  messageType?: "text" | "image";
+  mediaUrl?: string;
+  media_url?: string;
   timestamp: string;
 }
 
@@ -137,6 +140,9 @@ export interface DirectMessage {
   senderUserId: number;
   receiverUserId: number;
   text: string;
+  messageType?: "text" | "image";
+  mediaUrl?: string;
+  media_url?: string;
   timestamp: string;
 }
 
@@ -145,6 +151,8 @@ export interface DirectMessageResponse extends DirectMessage {
   sender_user_id?: number;
   receiver_user_id?: number;
   message_text?: string;
+  message_type?: "text" | "image";
+  media_url?: string;
   created_at?: string;
   sender_username?: string;
   sender_country?: string;

@@ -27,6 +27,20 @@ const RoomMessage = {
             console.error('Error catching create RoomMessage table',err);
             throw err;
         }
+    },
+
+    async addMediaColumn(){
+        const query = `
+            ALTER TABLE room_messages
+                ADD COLUMN IF NOT EXISTS media_url TEXT
+        `;
+
+        try{
+            await db.query(query);
+            console.log("media_url column added in room messages table")
+        }catch(err){
+            console.error("ADD media column error on room message: ",err.message)
+        }
     }
 
 

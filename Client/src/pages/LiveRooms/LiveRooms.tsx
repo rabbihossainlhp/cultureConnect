@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Menu } from "lucide-react";
+import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Menu, Image as ImageIcon, Paperclip, Trash2, Download } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { createRoomApiHandler, getRoomListApiHandler } from "../../services/api.service";
+import { createRoomApiHandler, getRoomListApiHandler, uploadMessageMediaApiHandler } from "../../services/api.service";
 import type { DirectMessage, DirectMessageResponse, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
 import type { DmHistoryPayload, RoomJoinedPayload, UiRoom } from "../../types";
 import { NotificationCenter, useNotifications } from "./components/NotificationCenter";
@@ -50,11 +50,15 @@ function LiveRooms() {
   const [rooms, setRooms] = useState<UiRoom[]>([]);
   const [selectedUiRoomId, setSelectedUiRoomId] = useState<string | null>(null);
   const [joinedRoomIds, setJoinedRoomIds] = useState<Set<number>>(new Set());
-
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
   const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
   const [messageInput, setMessageInput] = useState("");
+  const [messageFile, setMessageFile] = useState<File | null>(null);
+  const [messagePreview, setMessagePreview] = useState<string | null>(null);
+  const [uploadingMessageMedia, setUploadingMessageMedia] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState<string>("");
 
   // DM state - Load from localStorage on mount
   const [chatMode, setChatMode] = useState<"room" | "dm">("room");
@@ -185,6 +189,92 @@ function LiveRooms() {
       setTimeout(() => {
         messagesContainerRef.current!.scrollTop = messagesContainerRef.current!.scrollHeight;
       }, 0);
+    }
+  };
+
+  const handleMessageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    setMessageFile(file);
+    setSocketError("");
+
+    setMessagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const clearMessageAttachment = () => {
+    setMessagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setMessageFile(null);
+  };
+
+  const openMediaViewer = (mediaUrl: string, title: string) => {
+    setSelectedMediaUrl(mediaUrl);
+    setSelectedMediaTitle(title);
+  };
+
+  const closeMediaViewer = () => {
+    setSelectedMediaUrl(null);
+    setSelectedMediaTitle("");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (messagePreview) {
+        URL.revokeObjectURL(messagePreview);
+      }
+    };
+  }, [messagePreview]);
+
+  const isImageMessage = (msg: Message | DirectMessageResponse) => {
+    const typedMsg = msg as DirectMessageResponse;
+    return typedMsg.messageType === "image" || typedMsg.message_type === "image" || Boolean(typedMsg.media_url || (msg as Message).mediaUrl || (msg as Message).media_url);
+  };
+
+  const getMessageMediaUrl = (msg: Message | DirectMessageResponse) => {
+    return (
+      (msg as DirectMessageResponse).media_url ||
+      (msg as Message).mediaUrl ||
+      (msg as Message).media_url ||
+      ""
+    );
+  };
+
+  const getMessageType = (msg: Message | DirectMessageResponse) => {
+    const typedMsg = msg as DirectMessageResponse;
+    return typedMsg.messageType || typedMsg.message_type || "text";
+  };
+
+  const uploadAttachmentIfNeeded = async () => {
+    if (!messageFile) {
+      return { mediaUrl: "", messageType: "text" as const };
+    }
+
+    const formData = new FormData();
+    formData.append("image", messageFile);
+
+    setUploadingMessageMedia(true);
+    try {
+      const response = await uploadMessageMediaApiHandler(formData);
+      const mediaUrl =
+        response.mediaUrl ||
+        response.url ||
+        response.data?.mediaUrl ||
+        response.data?.url ||
+        "";
+
+      if (!mediaUrl) {
+        throw new Error("Upload succeeded but no media URL was returned");
+      }
+
+      return { mediaUrl, messageType: "image" as const };
+    } finally {
+      setUploadingMessageMedia(false);
     }
   };
 
@@ -576,7 +666,14 @@ function LiveRooms() {
         setDmConversations((prev) => {
           const updated = new Map(prev);
           const lastMsg = payload.messages && payload.messages.length > 0 ? payload.messages[payload.messages.length - 1] : null;
-          const lastMessageText = lastMsg ? ((lastMsg as DirectMessageResponse).message_text || lastMsg.text || "Message") : "Started conversation";
+          const isLastMessageImage = lastMsg
+            ? ((lastMsg as DirectMessageResponse).message_type === "image" || Boolean((lastMsg as DirectMessageResponse).media_url || (lastMsg as DirectMessageResponse).mediaUrl))
+            : false;
+          const lastMessageText = lastMsg
+            ? (isLastMessageImage
+                ? ((lastMsg as DirectMessageResponse).message_text || lastMsg.text || "📷 Image")
+                : ((lastMsg as DirectMessageResponse).message_text || lastMsg.text || "Message"))
+            : "Started conversation";
           const lastTimestamp = lastMsg ? ((lastMsg as DirectMessageResponse).created_at || lastMsg.timestamp || new Date().toISOString()) : new Date().toISOString();
           updated.set(Number(payload.target.userId), {
             user: payload.target,
@@ -889,36 +986,60 @@ function LiveRooms() {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const socket = socketRef.current;
     const activeRoomId = selectedRoom?.roomId;
     const text = messageInput.trim();
 
-    if (!socket || !socket.connected || !activeRoomId || !text) return;
+    if (!socket || !socket.connected || !activeRoomId || (!text && !messageFile)) return;
 
-    socket.emit("chat:send", { roomId: activeRoomId, text });
-    setMessageInput("");
+    try {
+      const mediaPayload = await uploadAttachmentIfNeeded();
+
+      socket.emit("chat:send", {
+        roomId: activeRoomId,
+        text,
+        messageType: mediaPayload.messageType,
+        mediaUrl: mediaPayload.mediaUrl || undefined,
+      });
+
+      setMessageInput("");
+      clearMessageAttachment();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send message";
+      setSocketError(message);
+    }
   };
 
-  const sendDirectMessage = () => {
+  const sendDirectMessage = async () => {
     const socket = socketRef.current;
     const roomId = selectedRoom?.roomId;
     const text = messageInput.trim();
 
-    if (!socket || !socket.connected || !roomId || !dmTarget || !text) {
-      console.log(`❌ Cannot send DM: socket=${!!socket}, connected=${socket?.connected}, roomId=${roomId}, dmTarget=${!!dmTarget}, text="${text}"`);
+    if (!socket || !socket.connected || !roomId || !dmTarget || (!text && !messageFile)) {
+      console.log(`❌ Cannot send DM: socket=${!!socket}, connected=${socket?.connected}, roomId=${roomId}, dmTarget=${!!dmTarget}, text="${text}", file=${!!messageFile}`);
       return;
     }
 
-    console.log(`📤 Sending DM to user ${dmTarget.userId}: "${text}"`);
-    socket.emit("dm:send", {
-      roomId,
-      targetUserId: Number(dmTarget.userId),
-      text,
-    });
+    try {
+      const mediaPayload = await uploadAttachmentIfNeeded();
 
-    setMessageInput("");
-    console.log(`✅ DM message sent`);
+      console.log(`📤 Sending DM to user ${dmTarget.userId}: "${text}"`);
+      socket.emit("dm:send", {
+        roomId,
+        targetUserId: Number(dmTarget.userId),
+        text,
+        messageType: mediaPayload.messageType,
+        mediaUrl: mediaPayload.mediaUrl || undefined,
+      });
+
+      setMessageInput("");
+      clearMessageAttachment();
+      console.log(`✅ DM message sent`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send DM";
+      setSocketError(message);
+    }
   };
 
   return (
@@ -1454,6 +1575,9 @@ function LiveRooms() {
                   const senderUsername = msgResponse.sender_username || dmTarget?.username || `User ${senderUserId}`;
                   const messageText = msgResponse.message_text || msgResponse.text || "(empty message)";
                   const senderName = isFromCurrentUser ? "You" : senderUsername;
+                  const mediaUrl = getMessageMediaUrl(msgResponse);
+                  const hasMedia = isImageMessage(msgResponse) && Boolean(mediaUrl);
+                  const messageType = getMessageType(msgResponse);
 
                   return (
                     <div key={`${msg.id}-${idx}`} className={`flex gap-3 ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
@@ -1478,7 +1602,26 @@ function LiveRooms() {
                               : "bg-slate-200 text-slate-900 rounded-bl-none"
                           }`}
                         >
-                          <p className="text-sm">{messageText}</p>
+                          {hasMedia && (
+                            <button
+                              type="button"
+                              onClick={() => openMediaViewer(mediaUrl, `${senderName} attachment`)}
+                              className="mb-2 block w-full overflow-hidden rounded-xl border border-white/40 text-left"
+                              title="Open image"
+                            >
+                              <img
+                                src={mediaUrl}
+                                alt="Uploaded attachment"
+                                className="max-h-72 w-full object-cover transition hover:scale-[1.01]"
+                              />
+                            </button>
+                          )}
+                          {messageText && messageText !== "(empty message)" && (
+                            <p className="text-sm">{messageText}</p>
+                          )}
+                          {!messageText && messageType === "image" && (
+                            <p className="text-xs opacity-80">Image</p>
+                          )}
                         </div>
                         <p className={`text-[11px] mt-1 px-3 ${isFromCurrentUser ? "text-slate-500" : "text-slate-500"}`}>
                           {formatMessageTime((msg as DirectMessageResponse).created_at || msg.timestamp)}
@@ -1511,6 +1654,9 @@ function LiveRooms() {
                 {console.log(`📺 Rendering ${messages.length} room messages for room ${selectedRoom?.name}:`, messages)}
                 {messages.map((msg, index) => {
                   const isFromCurrentUser = msg.username === user?.username;
+                  const mediaUrl = getMessageMediaUrl(msg);
+                  const hasMedia = isImageMessage(msg) && Boolean(mediaUrl);
+                  const messageType = getMessageType(msg);
                 return (
                   <div key={`${msg.timestamp}-${index}`} className={`flex gap-2 ${isFromCurrentUser ? "justify-end" : "justify-start"}`}>
                     <div
@@ -1521,7 +1667,22 @@ function LiveRooms() {
                       }`}
                     >
                       <p className="mb-1 text-xs font-medium opacity-75">{msg.username}</p>
-                      <p className="text-sm">{msg.text}</p>
+                      {hasMedia && (
+                        <button
+                          type="button"
+                          onClick={() => openMediaViewer(mediaUrl, `${msg.username} attachment`)}
+                          className="mb-2 block w-full overflow-hidden rounded-xl border border-white/40 text-left"
+                          title="Open image"
+                        >
+                          <img
+                            src={mediaUrl}
+                            alt="Uploaded attachment"
+                            className="max-h-72 w-full object-cover transition hover:scale-[1.01]"
+                          />
+                        </button>
+                      )}
+                      {msg.text && <p className="text-sm">{msg.text}</p>}
+                      {!msg.text && messageType === "image" && <p className="text-xs opacity-80">Image</p>}
                       <p className="mt-1 text-[11px] opacity-70">{formatMessageTime(msg.timestamp)}</p>
                     </div>
                   </div>
@@ -1531,34 +1692,110 @@ function LiveRooms() {
             )}
           </div>
 
+          {selectedMediaUrl && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-4xl overflow-hidden rounded-3xl bg-slate-950 shadow-2xl ring-1 ring-white/10">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white">
+                  <div>
+                    <p className="text-sm font-semibold">Image preview</p>
+                    <p className="text-xs text-white/60">{selectedMediaTitle}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={selectedMediaUrl}
+                      download
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+                    >
+                      <Download size={16} />
+                      Download
+                    </a>
+                    <button
+                      type="button"
+                      onClick={closeMediaViewer}
+                      className="rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+                      aria-label="Close image preview"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-[75vh] overflow-auto bg-black p-4">
+                  <img
+                    src={selectedMediaUrl}
+                    alt={selectedMediaTitle || "Image preview"}
+                    className="mx-auto max-h-[70vh] w-auto max-w-full rounded-2xl object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="border-t border-slate-200 bg-white p-4 shrink-0">
             {(selectedRoom && joinedRoomIds.has(selectedRoom.roomId)) || chatMode === "dm" ? (
-              <div className="flex gap-3 items-end">
-                <input
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (chatMode === "dm") {
-                        sendDirectMessage();
-                      } else {
-                        sendMessage();
+              <div className="space-y-3">
+                {messagePreview && (
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <img
+                      src={messagePreview}
+                      alt="Attachment preview"
+                      className="h-20 w-20 rounded-xl object-cover"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-700">Image attached</p>
+                      <p className="text-xs text-slate-500">It will be uploaded before sending.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearMessageAttachment}
+                      className="rounded-full p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                      aria-label="Remove attachment"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-3 items-end">
+                  <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
+                    <Paperclip size={18} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMessageFileChange}
+                    />
+                  </label>
+                  <input
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (chatMode === "dm") {
+                          void sendDirectMessage();
+                        } else {
+                          void sendMessage();
+                        }
                       }
-                    }
-                  }}
-                  placeholder={chatMode === "dm" ? "Message..." : "Type a message..."}
-                  className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                />
-                <button
-                  onClick={chatMode === "dm" ? sendDirectMessage : sendMessage}
-                  disabled={!isConnected || !messageInput.trim()}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
-                  title="Send message"
-                >
-                  <Send size={18} />
-                </button>
+                    }}
+                    placeholder={chatMode === "dm" ? "Message..." : "Type a message..."}
+                    className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                  <button
+                    onClick={chatMode === "dm" ? () => void sendDirectMessage() : () => void sendMessage()}
+                    disabled={!isConnected || (!messageInput.trim() && !messageFile) || uploadingMessageMedia}
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+                    title={uploadingMessageMedia ? "Uploading image..." : "Send message"}
+                  >
+                    {uploadingMessageMedia ? <ImageIcon size={18} className="animate-pulse" /> : <Send size={18} />}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  You can send text, an image, or both together.
+                </p>
               </div>
             ) : (
               <p className="text-sm text-slate-500 text-center font-medium">Join a room or select a chat to start messaging</p>

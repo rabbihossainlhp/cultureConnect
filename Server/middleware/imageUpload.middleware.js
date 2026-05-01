@@ -19,6 +19,7 @@ const uploadMiddleware = (folderType = 'posts') =>{
         profiles:'cultureConnect/profiles',
         galleries:'cultureConnect/galleries',
         rooms:'cultureConnect/rooms',
+        messages:'cultureConnect/messages'
     };
 
     const folder = folderMap[folderType] || 'cultureConnect/uploads';
@@ -47,5 +48,6 @@ module.exports = {
     uploadPost:uploadMiddleware('posts'),
     uploadProfile:uploadMiddleware('profiles'),
     uploadRoom:uploadMiddleware('rooms'),
-    uploadGallery:uploadMiddleware('galleries')
+    uploadGallery:uploadMiddleware('galleries'),
+    uploadMessages:uploadMiddleware('messages')
 };

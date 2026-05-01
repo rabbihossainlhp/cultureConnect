@@ -130,6 +130,8 @@ const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
             u_receiver.country as receiver_country,
             u_receiver.profile_picture as receiver_profile_picture,
             dm.message_text,
+            dm.message_type,
+            dm.media_url
             dm.created_at
             FROM direct_messages dm
             LEFT JOIN users u_sender ON dm.sender_user_id = u_sender.id
@@ -147,14 +149,14 @@ const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
     }
 };
 
-const saveDmMessage = async (currentUserId,targetUserId,text) =>{
+const saveDmMessage = async (currentUserId,targetUserId,text,messageType,mediaUrl) =>{
     try{
         const query = `
-            INSERT INTO direct_messages(sender_user_id,receiver_user_id,message_text)
-            VALUES($1,$2,$3)
+            INSERT INTO direct_messages(sender_user_id,receiver_user_id,message_text,message_type,media_url)
+            VALUES($1,$2,$3,$4,$5)
             RETURNING id,sender_user_id,receiver_user_id,message_text,created_at
         `;
-        const result = await db.query(query,[currentUserId,targetUserId, text]);
+        const result = await db.query(query,[currentUserId,targetUserId, text,messageType,mediaUrl]);
         return result.rows[0];
     }catch(err){
         console.error('Error saving DM message: ',err.message);
@@ -267,6 +269,10 @@ const handleDmEvents = (io, socket) => {
       const targetUserId = normalizedUserId(payload?.targetUserId);
       const text = normalizedText(payload?.text);
       const receiverUser = await fetchTargetUser(targetUserId);
+      const mediaUrl = normalizedText(payload?.mediaUrl);
+      const messageType = normalizedText(payload?.messageType);
+
+
 
       // Validation: Valid room and user
       if (!roomId) {
@@ -276,7 +282,7 @@ const handleDmEvents = (io, socket) => {
         return socket.emit("socket:error", { code: "INVALID_USER", message: "Invalid target user ID" });
       }
 
-      if (!text) {
+      if (!text && !mediaUrl) {
         return socket.emit("socket:error", { code: "EMPTY_MESSAGE", message: "Message cannot be empty" });
       }
 
@@ -311,14 +317,16 @@ const handleDmEvents = (io, socket) => {
         receiver_username:receiverUser?.username || `User ${targetUserId}`,
         receiver_country:receiverUser?.country || "",
         receiver_profile_picture: receiverUser?.profile_picture || "",
-        message_text: text,
+        message_text: text || "",
+        messageType,
+        mediaUrl:mediaUrl ||null,
         created_at: new Date(),
       }
 
       await saveDmToRedis(user.id,targetUserId,msseageData);
 
       // Save DM to database --> PSQL
-      saveDmMessage(user.id, targetUserId, text)
+      saveDmMessage(user.id, targetUserId, text,messageType,mediaUrl || null)
         .then((savedMsg)=>{
           console.log(` DM saved to DB: ${savedMsg.id}`);
         })
