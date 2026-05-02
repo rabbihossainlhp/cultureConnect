@@ -158,52 +158,69 @@ function Explore() {
       </div>
 
       <section className="relative max-w-7xl mx-auto">
-        <div className="relative rounded-3xl backdrop-blur-xl bg-white/80 border border-white/60 shadow-2xl p-8 sm:p-10 overflow-hidden">
+        <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-orange-400 via-pink-400 to-sky-400"></div>
 
-          <div className="relative z-10">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="inline-flex items-center gap-2 rounded-full border border-orange-200/60 bg-orange-50/80 backdrop-blur-sm px-5 py-1.5 text-sm font-semibold tracking-wide text-orange-700 shadow-sm">
-                <BookOpenText className="h-4 w-4" />
-                CULTURE BLOG
-                <span className="ml-1 flex h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
+          <div className="relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="inline-flex items-center gap-2 rounded-full border border-orange-200/60 bg-orange-50/80 px-5 py-1.5 text-sm font-semibold tracking-wide text-orange-700 shadow-sm backdrop-blur-sm">
+                  <BookOpenText className="h-4 w-4" />
+                  CULTURE BLOG
+                  <span className="ml-1 flex h-2 w-2 animate-pulse rounded-full bg-orange-500"></span>
+                </p>
+
+                <div className="flex gap-4 text-xs text-slate-500">
+                  <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> 2.4k+ readers</span>
+                  <span className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> {postCount}+ stories</span>
+                </div>
+              </div>
+
+              <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight text-slate-800 sm:text-5xl lg:text-6xl">
+                Explore Real Stories <br />
+                <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">From Real Cultures</span>
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+                Discover community-written posts about traditions, food, language, and festivals.
+                CultureConnect turns cultural learning into shared stories.
               </p>
 
-              <div className="flex gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> 2.4k+ readers</span>
-                <span className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> {postCount}+ stories</span>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <button
+                  onClick={() => setIsCreateOpen(true)}
+                  className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-200 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-orange-300/30 active:scale-95"
+                >
+                  <div className="absolute inset-0 bg-linear-to-r from-orange-600 to-pink-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                  <span className="relative flex items-center gap-2">
+                    <PencilLine className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                    Write a Culture Post
+                    <Sparkles className="h-3.5 w-3.5 opacity-70" />
+                  </span>
+                </button>
+                <button
+                  onClick={() => void loadPosts()}
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white/60 px-6 py-3 font-semibold text-slate-700 backdrop-blur-sm transition-all duration-300 hover:border-orange-200 hover:bg-white hover:text-orange-600 hover:shadow-md"
+                >
+                  <Search className="h-4 w-4 transition-transform group-hover:scale-110" />
+                  Refresh Posts
+                </button>
               </div>
             </div>
 
-            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight bg-linear-to-r from-slate-800 via-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Explore Real Stories <br />
-              <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">From Real Cultures</span>
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-slate-600 text-lg leading-relaxed">
-              Discover community-written posts about traditions, food, language, and festivals.
-              CultureConnect turns cultural learning into shared stories.
-            </p>
-
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setIsCreateOpen(true)}
-                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-linear-to-r from-orange-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center gap-2">
-                  <PencilLine className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-                  Write a Culture Post
-                  <Sparkles className="h-3.5 w-3.5 opacity-70" />
-                </span>
-              </button>
-              <button
-                onClick={() => void loadPosts()}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-slate-200 bg-white/60 backdrop-blur-sm text-slate-700 font-semibold hover:bg-white hover:border-orange-200 hover:text-orange-600 hover:shadow-md transition-all duration-300 group"
-              >
-                <Search className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                Refresh Posts
-              </button>
+            <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-white/80 shadow-[0_20px_60px_-30px_rgba(249,115,22,0.45)]">
+              <img
+                src="/images/hero_world_map.jpg"
+                alt="CultureConnect world map"
+                className="h-72 w-full object-cover sm:h-80 lg:h-105"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-slate-950/55 via-slate-950/10 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/20 bg-white/10 p-4 text-white backdrop-blur-md">
+                <p className="text-xs uppercase tracking-[0.25em] text-white/75">Explore globally</p>
+                <p className="mt-1 text-sm leading-6 text-white/90">
+                  Stories, languages, and communities connected across the world.
+                </p>
+              </div>
             </div>
           </div>
         </div>

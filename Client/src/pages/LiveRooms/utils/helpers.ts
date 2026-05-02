@@ -14,12 +14,10 @@ export const formatMessageTime = (timestamp: string | Date | undefined): string 
   try {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
-      console.warn("Invalid timestamp:", timestamp);
       return "Just now";
     }
     return date.toLocaleString();
   } catch (error) {
-    console.error("Date parsing error:", error, timestamp);
     return "Just now";
   }
 };

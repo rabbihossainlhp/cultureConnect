@@ -10,7 +10,6 @@ export const logSignControllerWithGoogle = async():Promise<FirebaseAuthResponse>
     
     const result = await signInWithPopup(auth,provider);
 
-    console.log(result.user)
     const payload:FirebaseAuthPayload ={
         username:result.user.displayName,
         email:result.user.email,

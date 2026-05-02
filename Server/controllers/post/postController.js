@@ -61,7 +61,22 @@ const createPostController = async (req,res) =>{
 const getPostController = async (req,res)=>{
     try{
         const getPostQuery = `
-            SELECT * FROM cultural_post WHERE status='published'
+            SELECT
+                id,
+                author_id,
+                title,
+                description,
+                tags,
+                slug,
+                post_image,
+                status,
+                readtime,
+                likes_count AS likes,
+                comments_count,
+                created_at
+            FROM cultural_post
+            WHERE status='published'
+            ORDER BY created_at DESC
         `;
 
         const allPost = await db.query(getPostQuery);

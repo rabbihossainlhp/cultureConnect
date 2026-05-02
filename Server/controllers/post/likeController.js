@@ -4,8 +4,8 @@ const db = require('../../config/db');
 
 const likeUnlikePostController = async(req,res)=>{
     try{    
-        const userId = req.user?.id;
-        const {postId} = req.body;
+        const userId = Number(req.user?.id);
+        const postId = Number(req.body?.postId);
 
         if(!postId || !userId){
             return res.status(400).json({
@@ -27,26 +27,31 @@ const likeUnlikePostController = async(req,res)=>{
             });
         }
 
+        const likedBy = Array.isArray(checkPost.rows[0].likes)
+            ? checkPost.rows[0].likes.map((id) => Number(id))
+            : [];
+
+        const updated = likedBy.filter((id) => id !== userId);
 
         //update like/unlike-info into post table query....
         const updateQueryForLikeUnlike = `
             UPDATE cultural_post 
-            SET likes = $1,likes_count = array_length($1,1)
+            SET likes = $1::INTEGER[], likes_count = COALESCE(array_length($1::INTEGER[],1),0)
             WHERE id = $2
             RETURNING id,likes,likes_count
         `;
 
 
+        
 
-        const likedBy = checkPost.rows[0].likes || [];
 
         if(likedBy.includes(userId)){
 
-            await db.query(updateQueryForLikeUnlike,[postId]);
+            const result = await db.query(updateQueryForLikeUnlike,[updated,postId]);
             return res.status(200).json({
                 success:true,
                 message:"Post Unliked successfully",
-                data:userId
+                data:result.rows[0]
             })
         }
 

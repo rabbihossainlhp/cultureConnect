@@ -17,7 +17,6 @@ const CulturalPost = {
                 readtime VARCHAR(20),
                 likes INTEGER[]  DEFAULT '{}',
                 likes_count INTEGER NOT NULL DEFAULT 0,
-                comments VARCHAR(255) NOT NULL REFERENCES post_comments(id),
                 comments_count INTEGER NULL DEFAULT 0,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NULL,

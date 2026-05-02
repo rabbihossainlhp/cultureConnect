@@ -11,8 +11,10 @@ import {
   Bookmark,
   Share2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PostItem } from "../../constants/interface";
+import { likeUnlikePostApiHandler, getPostCommentsApiHandler, addCommentApiHandler } from "../../services/api.service";
+import { useAuth } from "../../contexts/AuthContext";
 
 const categoryColors: Record<string, string> = {
   Tradition: "from-emerald-500 to-teal-500",
@@ -35,9 +37,23 @@ const toTitleCase = (value: string) =>
     .replace(/(^|\s)\w/g, (m) => m.toUpperCase());
 
 export default function ExploreCard({ posts, isLoading = false }: ExploreCardProps) {
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState("All");
   const [savedPosts, setSavedPosts] = useState<number[]>([]);
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const likedStorageKey = `likedPosts_${user?.id ?? "guest"}`;
+  const [likedPosts, setLikedPosts] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem(likedStorageKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [likesMap, setLikesMap] = useState<Record<number, number>>({});
+  const [commentsOpen, setCommentsOpen] = useState<Record<number, boolean>>({});
+  const [commentsMap, setCommentsMap] = useState<Record<number, any[]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<number, boolean>>({});
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -64,10 +80,91 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
   };
 
   const handleLike = (postId: number) => {
-    setLikedPosts(prev => 
-      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
-    );
+    // optimistic toggle locally then sync with server
+    const isLiked = likedPosts.includes(postId);
+    setLikedPosts(prev => (isLiked ? prev.filter(id => id !== postId) : [...prev, postId]));
+
+    // update likesMap optimistically
+    setLikesMap(prev => ({ ...(prev || {}), [postId]: (prev[postId] ?? posts.find(p=>p.id===postId)?.likes ?? 0) + (isLiked ? -1 : 1) }));
+
+    likeUnlikePostApiHandler(postId).then((res) => {
+      const payload = res?.data ?? res;
+      const likesCount = payload?.likes_count ?? payload?.likesCount ?? payload?.likes?.length ?? null;
+      const message = String(res?.message ?? payload?.message ?? "").toLowerCase();
+      const likedFromServer = message.includes("liked") && !message.includes("unliked");
+      if (likesCount !== null) {
+        setLikesMap(prev => ({ ...(prev||{}), [postId]: likesCount }));
+      }
+      setLikedPosts((prev) => {
+        const has = prev.includes(postId);
+        if (likedFromServer && !has) return [...prev, postId];
+        if (!likedFromServer && has) return prev.filter((id) => id !== postId);
+        return prev;
+      });
+    }).catch(() => {
+      // rollback optimistic
+      setLikedPosts(prev => (isLiked ? [...prev, postId] : prev.filter(id=>id!==postId)));
+      setLikesMap(prev => ({ ...(prev||{}), [postId]: (prev[postId] ?? posts.find(p=>p.id===postId)?.likes ?? 0) }));
+    });
   };
+
+  const toggleComments = async (postId: number) => {
+    const isOpen = !!commentsOpen[postId];
+    if (isOpen) {
+      setCommentsOpen(prev => ({ ...prev, [postId]: false }));
+      return;
+    }
+
+    setCommentsOpen(prev => ({ ...prev, [postId]: true }));
+    // lazy load comments
+    if (!commentsMap[postId]) {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }));
+      try {
+        const res = await getPostCommentsApiHandler(postId);
+        const data = res?.data ?? res;
+        setCommentsMap(prev => ({ ...prev, [postId]: data ?? [] }));
+      } catch (err) {
+        setCommentsMap(prev => ({ ...prev, [postId]: [] }));
+      } finally {
+        setLoadingComments(prev => ({ ...prev, [postId]: false }));
+      }
+    }
+  };
+
+  const handleAddComment = async (postId: number) => {
+    const value = (commentInputs[postId] || "").trim();
+    if (!value) return;
+    try {
+      const res = await addCommentApiHandler(postId, value);
+      const added = res?.data ?? res;
+      const hydratedComment = {
+        ...added,
+        username: added?.username ?? user?.username ?? "You",
+        profile_picture: added?.profile_picture ?? user?.profile_picture ?? "",
+      };
+      setCommentsMap(prev => ({ ...(prev||{}), [postId]: [hydratedComment, ...(prev[postId] || [])] }));
+      setCommentInputs(prev => ({ ...prev, [postId]: "" }));
+    } catch (err) {
+      // ignore for now, optionally show toast
+    }
+  };
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(likedStorageKey);
+      setLikedPosts(raw ? JSON.parse(raw) : []);
+    } catch {
+      setLikedPosts([]);
+    }
+  }, [likedStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(likedStorageKey, JSON.stringify(likedPosts));
+    } catch {
+      // ignore storage errors
+    }
+  }, [likedPosts, likedStorageKey]);
 
   return (
     <section className="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8">
@@ -114,6 +211,8 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
           const isSaved = savedPosts.includes(post.id);
           const category = post.tags?.[0] ? toTitleCase(post.tags[0]) : "General";
           const gradientColor = categoryColors[category] || categoryColors.General;
+          const currentLikes = likesMap[post.id] ?? post.likes ?? 0;
+          const currentCommentsCount = commentsMap[post.id]?.length ?? post.comments_count ?? 0;
           
           return (
             <article
@@ -166,7 +265,7 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
                   </span>
                 </div>
 
-                {/* Interaction bar - Social media style */}
+                  {/* Interaction bar - Social media style */}
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
                   <div className="flex items-center gap-5">
                     {/* Like button */}
@@ -177,13 +276,13 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
                       }`}
                     >
                       <Heart className={`h-4.5 w-4.5 ${isLiked ? "fill-pink-500" : ""} transition-transform hover:scale-110`} />
-                      <span className="font-medium">{post.likes + (isLiked ? 1 : 0)}</span>
+                      <span className="font-medium">{currentLikes}</span>
                     </button>
                     
                     {/* Comment button */}
-                    <button className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-500 transition-colors">
+                    <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-500 transition-colors">
                       <MessageCircle className="h-4.5 w-4.5 hover:scale-110 transition-transform" />
-                      <span className="font-medium">{post.comments_count}</span>
+                      <span className="font-medium">{currentCommentsCount}</span>
                     </button>
                     
                     {/* Share button */}
@@ -212,6 +311,49 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
                     </Link>
                   </div>
                 </div>
+                {/* Comments pane - responsive small box */}
+                {commentsOpen[post.id] ? (
+                  <div className="mt-3 border-t pt-3">
+                    {loadingComments[post.id] ? (
+                      <div className="text-sm text-slate-500">Loading comments...</div>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-auto">
+                        {(commentsMap[post.id] || []).slice(0,5).map((c:any)=> (
+                          <div key={c.id} className="flex items-start gap-3">
+                            {c.profile_picture ? (
+                              <img
+                                src={c.profile_picture}
+                                alt={c.username ?? "User"}
+                                className="h-7 w-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="h-7 w-7 rounded-full bg-linear-to-br from-orange-400 to-pink-400 shrink-0 flex items-center justify-center text-[10px] text-white font-bold">
+                                {(c.username?.[0] ?? "U").toUpperCase()}
+                              </div>
+                            )}
+                            <div className="text-sm">
+                              <div className="font-medium text-slate-800 line-clamp-1">{c.username ?? 'User'}</div>
+                              <div className="text-slate-600 text-sm line-clamp-2">{c.content}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {(commentsMap[post.id] || []).length === 0 ? (
+                          <div className="text-sm text-slate-500">No comments yet. Be the first to comment.</div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <input
+                        value={commentInputs[post.id] ?? ""}
+                        onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        placeholder="Write a comment..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none"
+                      />
+                      <button onClick={() => handleAddComment(post.id)} className="inline-flex items-center px-3 py-2 bg-orange-500 text-white rounded-lg text-sm">Post</button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           );

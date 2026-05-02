@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Globe, X, ChevronLeft } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
 import { verifyOtpApiHandler } from "../services/api.service";
 import { useAuth } from "../contexts/AuthContext";
 import type { ToastState } from "../types";
+import BrandMark from "../components/common/BrandMark";
 
 export default function VerifyEmail() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -148,10 +149,10 @@ export default function VerifyEmail() {
       <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-2">
         {/* Left Side - Info */}
         <div className="hidden lg:block">
-          <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-white/70 px-4 py-1 text-xs font-semibold tracking-widest text-purple-600">
-            <Globe className="h-4 w-4" />
-            CULTURECONNECT
-          </div>
+          <BrandMark
+            imageClassName="h-12 w-12"
+            textClassName="text-sm font-semibold tracking-[0.25em] text-orange-600"
+          />
           <h1 className="mt-4 text-4xl font-black leading-tight text-slate-800">
             Verify Your Email
           </h1>

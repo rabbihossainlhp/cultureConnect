@@ -59,20 +59,16 @@ function UserDashBoard() {
 
 
     socket.on('room:room-joined',(data)=>{
-        console.log('Joined: ', data.message);
       });
 
       socket.on('room:user_left',(userData)=>{
-        console.log(`${userData.username} left the room`);
       });
 
       socket.on('chat:new', (messageData)=>{
-        console.log(`${messageData.username}: ${messageData.text}`)
       });
 
 
     socket.on('connect',()=>{
-      console.log('Client socket connected: ', socket.id);
       socket.emit('room:join','room-1',{
         userId:user?.email,
         username:user?.username,
@@ -82,7 +78,6 @@ function UserDashBoard() {
       
     });
     socket.on('disconnect',(reason)=>{
-      console.log('Client socket disconnected: ', socket.id, reason);
     });
 
     return ()=>{

@@ -7,14 +7,14 @@ function RootLayOut() {
   const hideFooter = location.pathname.includes('live-rooms')
 
   return (
-    <div>
-        <Navbar></Navbar>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+        <Navbar />
 
-        <main className='mt-15'>
-          <Outlet></Outlet>
+        <main className="pt-20 sm:pt-24">
+          <Outlet />
         </main>
         
-        {!hideFooter && <Footer></Footer>}
+        {!hideFooter && <Footer />}
     </div>
   )
 }

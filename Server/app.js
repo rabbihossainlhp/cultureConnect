@@ -15,6 +15,7 @@ const RoomParticipants = require('./models/room-participants.model');
 const CulturalPost = require('./models/cultural-post.model');
 const DirectMessage = require('./models/direct-message.model');
 const EmailVerificationCode = require('./models/email-verification-code.model');
+const PostComment = require('./models/post-comment.model');
 
 
 
@@ -119,6 +120,7 @@ server.listen(port, async()=>{
         await User.initializeJoinedRoomsForExistingUsers();
         await User.removeJoinedRoomsDuplicates();
         await User.alterTableHybridPassword();
+        await PostComment.createPostCommentsTable();
         await Rooms.createRoomsTable();
         await Rooms.alterTableAddPasswordCol();
         await RoomMessage.createRoomMessageTable();

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {motion,AnimatePresence} from "framer-motion";
-import { Eye, EyeOff, Globe, Globe2, Languages, Lock, Mail, UserRound , X} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Eye, EyeOff, Globe2, Languages, Lock, Mail, UserRound, X } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { sendOtpApiHandler, } from "../../services/api.service";
+import { sendOtpApiHandler } from "../../services/api.service";
 import type { ToastState } from "../../types";
 import { logSignControllerWithGoogle } from "../../services/firebase.service";
 import { useAuth } from '../../contexts/AuthContext';
+import BrandMark from "../common/BrandMark";
 
 
 const countries = [
@@ -162,10 +163,10 @@ export default function Signup() {
 
       <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-2">
         <aside className="hidden lg:block">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/70 px-4 py-1 text-xs font-semibold tracking-widest text-orange-600">
-            <Globe className="h-4 w-4" />
-            CULTURECONNECT
-          </div>
+          <BrandMark
+            imageClassName="h-12 w-12"
+            textClassName="text-sm font-semibold tracking-[0.25em] text-orange-600"
+          />
           <h1 className="text-4xl font-black leading-tight text-slate-800">
             Meet the world,
             <br />

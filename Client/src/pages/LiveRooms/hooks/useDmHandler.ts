@@ -14,7 +14,7 @@ export const useDmHandler = () => {
         return new Map(parsed);
       }
     } catch (error) {
-      console.error("Error loading dmConversations from localStorage:", error);
+      // Silent error handling
     }
     return new Map();
   });
@@ -27,7 +27,7 @@ export const useDmHandler = () => {
         return new Set(parsed);
       }
     } catch (error) {
-      console.error("Error loading unreadDmCount from localStorage:", error);
+      // Silent error handling
     }
     return new Set();
   });
@@ -62,7 +62,7 @@ export const useDmHandler = () => {
       const data = Array.from(dmConversations.entries());
       localStorage.setItem("dmConversations", JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving dmConversations to localStorage:", error);
+      // Silent error handling
     }
   }, [dmConversations]);
 
@@ -72,7 +72,7 @@ export const useDmHandler = () => {
       const data = Array.from(unreadDmCount);
       localStorage.setItem("unreadDmCount", JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving unreadDmCount to localStorage:", error);
+      // Silent error handling
     }
   }, [unreadDmCount]);
 
