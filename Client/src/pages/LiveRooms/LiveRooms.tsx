@@ -22,12 +22,10 @@ const formatMessageTime = (timestamp: string | Date | undefined): string => {
   try {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
-      console.warn("Invalid timestamp:", timestamp);
       return "Just now";
     }
     return date.toLocaleString();
   } catch (error) {
-    console.error("Date parsing error:", error, timestamp);
     return "Just now";
   }
 };
@@ -73,13 +71,10 @@ function LiveRooms() {
       const saved = localStorage.getItem(`dmConversations_${userId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        console.log(`📨 Loaded ${parsed.length} DM conversations from localStorage for user ${userId}`);
         return new Map(parsed);
-      } else {
-        console.log(`📨 No saved DM conversations for user ${userId}, starting fresh`);
       }
     } catch (error) {
-      console.error("Error loading dmConversations from localStorage:", error);
+      // Silent error handling
     }
     return new Map();
   });
@@ -95,7 +90,7 @@ function LiveRooms() {
         return new Set(parsed);
       }
     } catch (error) {
-      console.error("Error loading unreadDmCount from localStorage:", error);
+      // Silent error handling
     }
     return new Set();
   });
@@ -176,7 +171,6 @@ function LiveRooms() {
   useEffect(() => {
     if (selectedUiRoomId && chatMode === "room") {
       localStorage.setItem("lastSelectedRoomId", selectedUiRoomId);
-      console.log(`💾 Saved last selected room: ${selectedUiRoomId}`);
     }
   }, [selectedUiRoomId, chatMode]);
 
@@ -296,9 +290,8 @@ function LiveRooms() {
     scrollToBottom();
   }, [dmMessages]);
 
-  // 🔍 DEBUG: Log when messages state changes
   useEffect(() => {
-    console.log(`📊 Messages state updated: ${messages.length} messages`, messages);
+    // Debug effect: Log when messages state changes
   }, [messages]);
 
   useEffect(() => {
@@ -308,10 +301,9 @@ function LiveRooms() {
       if (!userId) return;
       
       const data = Array.from(dmConversations.entries());
-      console.log(`💾 Saving ${data.length} DM conversations for user ${userId}`);
       localStorage.setItem(`dmConversations_${userId}`, JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving dmConversations to localStorage:", error);
+      // Silent error handling
     }
   }, [dmConversations, user?.id]);
 
@@ -324,7 +316,7 @@ function LiveRooms() {
       const data = Array.from(unreadDmCount);
       localStorage.setItem(`unreadDmCount_${userId}`, JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving unreadDmCount to localStorage:", error);
+      // Silent error handling
     }
   }, [unreadDmCount, user?.id]);
 
@@ -337,14 +329,11 @@ function LiveRooms() {
     const key = searchTerm.trim().toLowerCase();
     const roomList = rooms;
     
-    console.log(`🔍 filteredRooms calc: rooms=${roomList.length}, searchTerm="${searchTerm}", joinedRoomIds.size=${joinedRoomIds.size}`);
-    
     // ✅ FIX: Show ALL rooms (not filtered by joinedRoomIds)
     // The isJoined button will determine whether user sees "Join" or "Leave"
     // This way users can rejoin rooms after leaving them
     
     if (!key) {
-      console.log(`🎯 No search term, returning all ${roomList.length} rooms`);
       return roomList;
     }
 
@@ -356,15 +345,12 @@ function LiveRooms() {
         (room.slug || "").toLowerCase().includes(key)
       );
     });
-    console.log(`🎯 After search filter: ${result.length} rooms`);
     return result;
   }, [rooms, searchTerm, joinedRoomIds]);
 
   const fetchRooms = useCallback(async () => {
-    console.log("🔄 fetchRooms called, isAuthenticated:", isAuthenticated);
     
     if (!isAuthenticated) {
-      console.log("❌ Not authenticated, skipping room fetch");
       setRooms([]);
       setSelectedUiRoomId(null);
       return;
@@ -372,28 +358,18 @@ function LiveRooms() {
 
     setLoadingRooms(true);
     try {
-      console.log("📡 Calling getRoomListApiHandler...");
       const result = await getRoomListApiHandler();
-      console.log("📡 API Response (full):", JSON.stringify(result, null, 2));
-      console.log("📡 API Response.data type:", typeof result.data, "is array?", Array.isArray(result.data));
-      console.log("📡 API Response.data length:", result.data?.length || 0);
       
       if (!result.data || !Array.isArray(result.data)) {
-        console.error("❌ API returned invalid data structure:", result.data);
         throw new Error("API returned invalid room list format");
       }
       
-      console.log("📄 Raw API items:", result.data);
       const fetchedRooms = result.data.map((room: RoomListItem) => {
         const mapped = mapRoomListItemToUiRoom(room);
-        console.log(`  ✅ Mapped room:`, { original: room, mapped });
         return mapped;
       });
       
-      console.log(`✅ Total mapped ${fetchedRooms.length} rooms:`, fetchedRooms);
-      
       setRooms(fetchedRooms);
-      console.log(`📝 Called setRooms with ${fetchedRooms.length} rooms`);
       
       // ✅ FIX: Do NOT auto-populate joinedRoomIds from API
       // The API returns all available rooms, not rooms the user is joined to
@@ -406,17 +382,14 @@ function LiveRooms() {
           const savedRoomId = localStorage.getItem("lastSelectedRoomId");
           if (savedRoomId && fetchedRooms.some((room) => room.id === savedRoomId)) {
             nextSelected = savedRoomId;
-            console.log(`🔄 Restored last selected room: ${nextSelected}`);
           } else {
             nextSelected = fetchedRooms[0]?.id || null;
-            console.log(`🔄 Selected first room: ${nextSelected}`);
           }
         }
         return nextSelected;
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load rooms";
-      console.error("❌ Error fetching rooms:", message, error);
       setSocketError(message);
       setRooms([]);
       setSelectedUiRoomId(null);
@@ -427,15 +400,7 @@ function LiveRooms() {
 
   // ✅ Debug effect: Log rooms and joinedRoomIds state
   useEffect(() => {
-    console.log("📊 STATE UPDATE:");
-    console.log(`  - rooms: ${rooms.length} rooms`);
-    if (rooms.length > 0) {
-      console.log(`    ${rooms.map(r => `${r.name} (ID: ${r.roomId})`).join(", ")}`);
-    }
-    console.log(`  - joinedRoomIds: ${joinedRoomIds.size} rooms [${Array.from(joinedRoomIds).join(", ")}]`);
-    console.log(`  - filteredRooms: ${filteredRooms.length} rooms`);
-    console.log(`  - viewMode: ${viewMode}`);
-    console.log(`  - selectedUiRoomId: ${selectedUiRoomId}`);
+    // State tracking
   }, [rooms, joinedRoomIds, filteredRooms, viewMode, selectedUiRoomId]);
 
   useEffect(() => {
@@ -444,37 +409,31 @@ function LiveRooms() {
 
   // ✅ Debug: Log when isAuthenticated changes
   useEffect(() => {
-    console.log(`🔐 Authentication state changed: isAuthenticated=${isAuthenticated}, user=${user?.username}`);
+    // Auth state tracking
   }, [isAuthenticated, user]);
 
   // ✅ Debug: Log when messages state changes
   useEffect(() => {
-    console.log(`💬 Messages state updated: ${messages.length} messages for room ${selectedRoom?.name || selectedUiRoomId}`);
   }, [messages, selectedRoom, selectedUiRoomId]);
 
   // ✅ DEBUG: Log when dmTarget changes
   useEffect(() => {
     if (dmTarget) {
-      console.log(`🎯 dmTarget updated: ${dmTarget.username} (userId: ${dmTarget.userId})`);
       dmTargetRef.current = dmTarget;
-      console.log(`✅ dmTargetRef synchronized with dmTarget`);
     } else {
       dmTargetRef.current = null;
-      console.log(`🎯 dmTarget cleared`);
     }
   }, [dmTarget]);
 
   // ✅ DEBUG: Sync dmMessagesRef with dmMessages state
   useEffect(() => {
     dmMessagesRef.current = dmMessages;
-    console.log(`💬 dmMessagesRef updated: ${dmMessages.length} messages`);
   }, [dmMessages]);
 
   // ✅ DEBUG: Sync currentUserIdRef with user
   useEffect(() => {
     const userId = user?.id ? Number(user.id) : NaN;
     currentUserIdRef.current = userId;
-    console.log(`👤 currentUserIdRef updated: ${userId}`);
   }, [user?.id]);
 
   // Socket connection and listeners
@@ -488,22 +447,18 @@ function LiveRooms() {
     });
 
     socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
       setIsConnected(true);
       setSocketError("");
       // Request DM contacts list when connected
       socket.emit("dm:contacts");
-      console.log("📨 Requested dm:contacts list from server");
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", reason);
       setIsConnected(false);
     });
 
     // ✅ NEW: Listen for user info with actual joined_rooms from backend
     socket.on("user:info", (userInfo: Record<string, unknown>) => {
-      console.log(`📥 user:info received:`, userInfo);
       
       // Extract joined_rooms from the response
       // Backend sends: { userId, username, joinedRooms: { joined_rooms: [1,2,3] } }
@@ -523,15 +478,12 @@ function LiveRooms() {
       
       if (joinedRoomsArray.length > 0) {
         const joinedSet = new Set(joinedRoomsArray.map(id => Number(id)));
-        console.log(`✅ Populated joinedRoomIds from user:info: [${Array.from(joinedSet).join(", ")}]`);
         setJoinedRoomIds(joinedSet);
       } else {
-        console.log(`📭 No joined rooms found in user:info`);
       }
     });
 
     socket.on("connect_error", (error) => {
-      console.error("🔴 Socket connection error:", error.message);
       setSocketError(`Connection error: ${error.message}`);
     });
 
@@ -550,11 +502,9 @@ function LiveRooms() {
     });
 
     socket.on("room:joined", (payload: RoomJoinedPayload) => {
-      console.log(`📥 room:joined event received for room ${payload.room.id}`, payload);
       setSocketError("");
       setRoomUsers(payload.users || []);
       setMessages(payload.messages || []);
-      console.log(`📝 Updated messages count: ${payload.messages?.length || 0}`);
       
       // ✅ FIX: Ensure room is added to joinedRoomIds when we rejoin
       // Convert room.id to number to ensure type consistency
@@ -562,7 +512,6 @@ function LiveRooms() {
         const next = new Set(prev);
         const roomIdNum = Number(payload.room.id);
         next.add(roomIdNum);
-        console.log(`✅ Added room ${roomIdNum} to joinedRoomIds:`, Array.from(next));
         return next;
       });
       
@@ -570,17 +519,14 @@ function LiveRooms() {
       // This prevents auto-rejoin from overwriting the user's previously viewed room
       setSelectedUiRoomId((prev) => {
         if (prev) {
-          console.log(`🚫 Already viewing room ${prev}, keeping selection`);
           return prev; // Keep current selection
         }
-        console.log(`✅ Setting initial room to ${payload.room.id}`);
         return String(payload.room.id);
       });
       
       setChatMode("room");
       setDmTarget(null);
       setDmMessages([]);
-      console.log(`✅ room:joined event fully processed for room ${payload.room.id}`);
     });
 
     socket.on("room:messages", (payload: { roomId: number; messages: Message[] }) => {
@@ -588,33 +534,21 @@ function LiveRooms() {
       const currentRoomId = selectedRoomIdRef.current;
       const incomingRoomId = payload.roomId;
       
-      console.log(`📨 room:messages event - incoming: ${incomingRoomId} (${typeof incomingRoomId}), current: ${currentRoomId} (${typeof currentRoomId}), count: ${payload.messages?.length || 0}`);
-      
       // Convert both to numbers to ensure comparison works
       const currentRoomIdNum = Number(currentRoomId);
       const incomingRoomIdNum = Number(incomingRoomId);
       
-      console.log(`🔍 Numeric comparison: ${currentRoomIdNum} === ${incomingRoomIdNum} ? ${currentRoomIdNum === incomingRoomIdNum}`);
-      
       // Only update if the incoming messages are for the currently selected room
       if (currentRoomIdNum === incomingRoomIdNum) {
-        console.log(`✅ Loading ${payload.messages?.length || 0} messages for room ${incomingRoomId}`);
-        console.log(`📋 Messages:`, payload.messages);
         setMessages(payload.messages || []);
         setSocketError("");
-      } else {
-        console.log(`❌ Ignoring messages for room ${incomingRoomId}, current room is ${currentRoomId}`);
       }
       // If messages are for a different room, ignore them
     });
 
-    console.log(`✔️ room:messages handler registered for socket ${socket.id}`);
-
-    // 🔍 Debug: Log all received socket events
+    // Debug: handler registered
     socket.onAny((eventName, ...args) => {
-      if (!eventName.includes("room:messages")) {
-        console.log(`📡 Socket event received: ${eventName}`, args);
-      }
+      // Socket event tracking
     });
 
     socket.on("room:user_joined", (joinedUser: RoomUser) => {
@@ -640,19 +574,15 @@ function LiveRooms() {
     });
 
     socket.on("dm:history", (payload: DmHistoryPayload) => {
-      console.log("📨 DM History received:", payload);
-      console.log(`📨 DM history contains ${payload.messages?.length || 0} messages with user ${payload.target?.username}`);
       setSocketError("");
       setChatMode("dm");
       setDmTarget(payload.target);
       setDmMessages(payload.messages || []);
-      console.log(`✅ Updated dmMessages: ${payload.messages?.length || 0} messages`);
 
       if (payload.target) {
         setUnreadDmCount((prev) => {
           const next = new Set(prev);
           next.delete(Number(payload.target.userId));
-          console.log(`🔔 Cleared unread badge for user ${payload.target.userId}`);
           // ✅ CRITICAL FIX: Namespace localStorage with userId
           const userId = user?.id;
           if (userId) {
@@ -680,8 +610,6 @@ function LiveRooms() {
             lastMessage: lastMessageText,
             timestamp: lastTimestamp,
           });
-          console.log(`💬 Updated conversation for user ${payload.target.userId}: "${lastMessageText}"`);
-          return updated;
         });
       }
     });
@@ -704,10 +632,8 @@ function LiveRooms() {
 
     // ✅ FIX: Handle dm:contacts response from server
     socket.on("dm:contacts", (contacts: Record<string, unknown>[]) => {
-      console.log(`📥 dm:contacts received:`, contacts);
       
       if (!Array.isArray(contacts) || contacts.length === 0) {
-        console.log("📭 No existing DM contacts found");
         return;
       }
 
@@ -732,15 +658,12 @@ function LiveRooms() {
                 lastMessage: "No messages yet",
                 timestamp: new Date().toISOString(),
               });
-              console.log(`✅ Added DM contact: ${contactUsername} (ID: ${contactUserId})`);
             }
           });
           
-          console.log(`📊 Total DM conversations: ${newConversations.size}`);
           return newConversations;
         });
       } catch (error) {
-        console.error("❌ Error processing dm:contacts:", error);
       }
     });
 
@@ -761,7 +684,6 @@ function LiveRooms() {
     const socket = socketRef.current;
     if (!socket || !socket.connected) {
       setSocketError("Socket is not connected");
-      console.error("❌ Cannot join room: Socket not connected");
       return;
     }
 
@@ -773,12 +695,10 @@ function LiveRooms() {
       return;
     }
 
-    console.log(`🤝 joinRoom called for room ${room.name} (ID: ${room.id}, roomId: ${room.roomId})`);
     
     // ✅ CRITICAL: Update ref immediately so room:joined handler knows we're viewing this room
     const roomIdNum = Number(room.roomId);
     selectedRoomIdRef.current = roomIdNum;
-    console.log(`✅ Updated selectedRoomIdRef to ${roomIdNum}`);
     
     setSelectedUiRoomId(room.id);
     setChatMode("room");
@@ -786,7 +706,6 @@ function LiveRooms() {
     setDmMessages([]);
     resetRoomUi();
     
-    console.log(`📤 Emitting room:join for roomId ${room.roomId}`);
     socket.emit("room:join", { roomId: room.roomId });
   };
 
@@ -797,12 +716,10 @@ function LiveRooms() {
       return;
     }
 
-    console.log(`🤝 joinRoomWithPassword called for room ${room.name} (ID: ${room.id}, roomId: ${room.roomId})`);
     
     // ✅ CRITICAL: Update ref immediately so room:joined handler knows we're viewing this room
     const roomIdNum = Number(room.roomId);
     selectedRoomIdRef.current = roomIdNum;
-    console.log(`✅ Updated selectedRoomIdRef to ${roomIdNum}`);
 
     setSelectedUiRoomId(room.id);
     setChatMode("room");
@@ -810,7 +727,6 @@ function LiveRooms() {
     setDmMessages([]);
     resetRoomUi();
     
-    console.log(`📤 Emitting room:join with password for roomId ${room.roomId}`);
     socket.emit("room:join", { roomId: room.roomId, password });
     setShowPasswordModal(false);
     setJoinPassword("");
@@ -831,7 +747,6 @@ function LiveRooms() {
       return;
     }
 
-    console.log(`💬 Opening DM with user ${target.username} (userId: ${target.userId})`);
     setDmTarget(target);
     setChatMode("dm");
     setDmMessages([]);
@@ -841,7 +756,6 @@ function LiveRooms() {
     setUnreadDmCount((prev) => {
       const next = new Set(prev);
       next.delete(Number(target.userId));
-      console.log(`🔔 Cleared unread badge for user ${target.userId}`);
       // ✅ CRITICAL FIX: Namespace localStorage with userId
       const userId = user?.id;
       if (userId) {
@@ -850,7 +764,6 @@ function LiveRooms() {
       return next;
     });
 
-    console.log(`📤 Emitting dm:history request for user ${target.userId}`);
     socket.emit("dm:history", { roomId, targetUserId: Number(target.userId) });
   };
 
@@ -1017,14 +930,12 @@ function LiveRooms() {
     const text = messageInput.trim();
 
     if (!socket || !socket.connected || !roomId || !dmTarget || (!text && !messageFile)) {
-      console.log(`❌ Cannot send DM: socket=${!!socket}, connected=${socket?.connected}, roomId=${roomId}, dmTarget=${!!dmTarget}, text="${text}", file=${!!messageFile}`);
       return;
     }
 
     try {
       const mediaPayload = await uploadAttachmentIfNeeded();
 
-      console.log(`📤 Sending DM to user ${dmTarget.userId}: "${text}"`);
       socket.emit("dm:send", {
         roomId,
         targetUserId: Number(dmTarget.userId),
@@ -1035,7 +946,6 @@ function LiveRooms() {
 
       setMessageInput("");
       clearMessageAttachment();
-      console.log(`✅ DM message sent`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send DM";
       setSocketError(message);
@@ -1049,21 +959,17 @@ function LiveRooms() {
         notifications={notifications}
         onDismiss={dismissNotification}
         onClickNotification={(notification) => {
-          console.log(`🔔 Notification clicked:`, notification);
           // When user clicks a DM notification, open that conversation
           if (notification.type === "dm") {
             const senderId = Number(notification.metadata?.senderId);
-            console.log(`💬 Opening DM with sender ${senderId}`);
             if (!isNaN(senderId)) {
               setViewMode("dms");
               // ✅ FIX: Try to get from dmConversations first, fall back to creating from metadata
               const existing = dmConversations.get(senderId);
               if (existing) {
-                console.log(`✅ Found conversation in dmConversations:`, existing.user);
                 setDmTarget(existing.user);
               } else {
                 // If not in conversations yet, try to create from sender info
-                console.log(`⚠️ Sender ${senderId} not in dmConversations, creating from notification metadata`);
                 setDmTarget({
                   userId: String(senderId),
                   username: notification.senderName || `User ${senderId}`,
@@ -1072,9 +978,7 @@ function LiveRooms() {
                 });
               }
               setSidebarOpen(true);
-              console.log(`✅ DM conversation opened for user ${senderId}`);
             } else {
-              console.error(`❌ Invalid senderId: ${notification.metadata?.senderId}`);
             }
           }
           dismissNotification(notification.id);
@@ -1215,14 +1119,7 @@ function LiveRooms() {
             {viewMode === "rooms" ? (
               <>
                 {(() => {
-                  console.log("🎯 RENDERING ROOMS:");
-                  console.log(`   - viewMode: ${viewMode}`);
-                  console.log(`   - rooms.length: ${rooms.length}`);
-                  console.log(`   - filteredRooms.length: ${filteredRooms.length}`);
-                  console.log(`   - joinedRoomIds.size: ${joinedRoomIds.size}`);
-                  console.log(`   - searchTerm: "${searchTerm}"`);
                   if (filteredRooms.length > 0) {
-                    console.log(`   - Rooms to display: ${filteredRooms.map(r => r.name).join(", ")}`);
                   }
                   return null;
                 })()}
@@ -1266,16 +1163,12 @@ function LiveRooms() {
                                 const roomIdNum = Number(room.roomId);
                                 selectedRoomIdRef.current = roomIdNum;
                                 const socket = socketRef.current;
-                                console.log(`🔍 Clicked room ${room.name} (id: ${room.id}, roomId: ${roomIdNum}, type: ${typeof roomIdNum})`);
-                                console.log(`📡 Socket connected: ${socket?.connected}, User joined: ${joinedRoomIds.has(roomIdNum)}`);
                                 
                                 // ✅ FIX: Only load messages if user is joined to this room
                                 // Do NOT auto-join the room here - just view the messages
                                 if (socket && socket.connected) {
-                                  console.log(`📤 Emitting room:load for roomId ${roomIdNum} (type: ${typeof roomIdNum})`);
                                   socket.emit("room:load", { roomId: roomIdNum });
                                 } else {
-                                  console.log(`⚠️ Cannot emit: socket not connected`);
                                 }
                               }}
                               className="flex-1 text-left"
@@ -1651,7 +1544,6 @@ function LiveRooms() {
               </div>
             ) : (
               <>
-                {console.log(`📺 Rendering ${messages.length} room messages for room ${selectedRoom?.name}:`, messages)}
                 {messages.map((msg, index) => {
                   const isFromCurrentUser = msg.username === user?.username;
                   const mediaUrl = getMessageMediaUrl(msg);

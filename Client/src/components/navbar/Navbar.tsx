@@ -175,14 +175,18 @@ function Navbar() {
         <NavLink
           onClick={closeMenus}
           to="/"
-          className="btn btn-ghost text-lg sm:text-xl lg:text-2xl font-bold flex items-center gap-2 hover:bg-transparent"
+          className="btn btn-ghost h-auto gap-2 px-2 py-1 hover:bg-transparent"
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-linear-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-            <Globe className="text-white" size={22} />
+          <div className="flex items-center gap-2">
+            <img
+              src="/images/logo.png"
+              alt="CultureConnect logo"
+              className="h-9 w-9 object-contain sm:h-10 sm:w-10"
+            />
+            <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-lg font-bold text-transparent sm:text-xl lg:text-2xl">
+              CultureConnect
+            </span>
           </div>
-          <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-            CultureConnect
-          </span>
         </NavLink>
       </div>
 

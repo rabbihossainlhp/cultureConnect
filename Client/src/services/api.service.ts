@@ -164,6 +164,46 @@ export const getPostListApiHandler = async (): Promise<PostListResponse> => {
     return data;
 };
 
+// like/unlike post
+export const likeUnlikePostApiHandler = async (postId: number) => {
+    const res = await fetch(`${Base_api_url}/post/like-unlike`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Like/unlike failed");
+    return data;
+};
+
+// add comment
+export const addCommentApiHandler = async (postId: number, content: string) => {
+    const res = await fetch(`${Base_api_url}/post/${postId}/comment`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, content }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Add comment failed");
+    return data;
+};
+
+// get comments
+export const getPostCommentsApiHandler = async (postId: number) => {
+    const res = await fetch(`${Base_api_url}/post/${postId}/comments`, {
+        method: "GET",
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Fetch comments failed");
+    return data;
+};
+
 
 // update profile api handler
 export const updateProfileApiHandler = async (formData: FormData) => {

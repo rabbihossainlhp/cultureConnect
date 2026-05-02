@@ -88,17 +88,13 @@ export const useNotifications = () => {
       metadata,
     };
 
-    console.log(`📬 Adding notification from ${senderName}: "${messageText}" (id: ${id})`);
-    console.log(`📬 Current notifications count: ${notifications.length}`);
     setNotifications((prev) => {
       const updated = [...prev, notification];
-      console.log(`📬 Notifications updated: ${updated.length} total`);
       return updated;
     });
 
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
-      console.log(`⏰ Auto-dismissing notification ${id}`);
       dismissNotification(id);
     }, 5000);
 

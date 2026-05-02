@@ -18,6 +18,8 @@ import LiveRooms from "../pages/LiveRooms/LiveRooms";
 import Missions from "../pages/Learn/Missions";
 import Languages from "../pages/Learn/Languages";
 import Profile from "../pages/Profile";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import TermsOfService from "../pages/TermsOfService";
 
 
 
@@ -29,6 +31,8 @@ const publicRoutes = [
   {path:"explore/:slug",Component:SinglePost},
   {path:"live-rooms",Component:LiveRooms},
   {path:"profile", Component:Profile},
+  {path:"privacy-policy", Component:PrivacyPolicy},
+  {path:"terms-of-service", Component:TermsOfService},
   {path:"verify-email", Component:VerifyEmail},
   {
     path:"learn",

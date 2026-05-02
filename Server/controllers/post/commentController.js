@@ -27,7 +27,7 @@ const addCommentController = async(req,res)=>{
             RETURNING id,post_id,author_id,content,created_at
         `;
 
-        const comment = await db.query(insertCommentQuery,[postId,authorId,content.tirm()]);
+        const comment = await db.query(insertCommentQuery,[postId,authorId,content.trim()]);
 
         //update comment count on post's table....
         await db.query(`UPDATE cultural_post SET comments_count = comments_count + 1 WHERE id = $1`,[postId])
@@ -56,7 +56,7 @@ const addCommentController = async(req,res)=>{
 
 const getCommentController = async(req,res)=>{
     try{
-        const {postId} = req.body;
+        const {postId} = req.params;
 
         if(!postId ){
             return res.status(400).json({
@@ -87,7 +87,7 @@ const getCommentController = async(req,res)=>{
             JOIN users u ON pc.author_id = u.id
             WHERE pc.post_id = $1 
             AND pc.status = 'published'
-            AND pc.deleted = NULL
+            AND pc.deleted_at IS NULL
             ORDER BY pc.created_at DESC
         `;
 
@@ -96,7 +96,7 @@ const getCommentController = async(req,res)=>{
         return res.status(200).json({
             success:true,
             message:"Comment fetched successfully",
-            data:comment.rows
+            data:comments.rows
         });
 
         
@@ -117,7 +117,7 @@ const getCommentController = async(req,res)=>{
 
 const deleteCommentController = async(req,res)=>{
     try{
-        const {commentId} = req.body;
+        const {commentId} = req.params;
         const userId = req.user?.id;
 
         if(!commentId || !userId){
@@ -137,7 +137,7 @@ const deleteCommentController = async(req,res)=>{
         }
 
 
-        if(checkComment.rows[0].authorId !== userId){
+        if(checkComment.rows[0].author_id !== userId){
             return res.status(403).json({
                 success:false,
                 message:"Unauthorized to delete this comment"
