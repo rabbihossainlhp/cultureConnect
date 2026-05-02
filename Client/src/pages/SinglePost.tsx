@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, CalendarDays, Clock3, Heart, MessageCircle, Send, Tag } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router";
 import type { PostItem } from "../constants/interface";
@@ -7,6 +7,16 @@ import { useAuth } from "../contexts/AuthContext";
 
 type LocationState = {
   post?: PostItem;
+};
+
+type PostComment = {
+  id: number | string;
+  username?: string;
+  profile_picture?: string;
+  content?: string;
+  text?: string;
+  created_at?: string;
+  [key: string]: unknown;
 };
 
 const toTitleCase = (value: string) =>
@@ -26,7 +36,7 @@ function SinglePost() {
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes ?? 0);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<PostComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [postingComment, setPostingComment] = useState(false);
@@ -67,6 +77,19 @@ function SinglePost() {
     void loadSinglePost();
   }, [slug, locationState]);
 
+  const loadComments = useCallback(async () => {
+    if (!post) return;
+    setLoadingComments(true);
+    try {
+      const res = await getPostCommentsApiHandler(post.id);
+      setComments(res?.data ?? []);
+    } catch {
+      setComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, [post]);
+
   useEffect(() => {
     if (post) {
       setLikesCount(post.likes ?? 0);
@@ -79,20 +102,7 @@ function SinglePost() {
         setIsLiked(false);
       }
     }
-  }, [post?.id, likedStorageKey]);
-
-  const loadComments = async () => {
-    if (!post) return;
-    setLoadingComments(true);
-    try {
-      const res = await getPostCommentsApiHandler(post.id);
-      setComments(res?.data ?? []);
-    } catch (err) {
-      setComments([]);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
+  }, [post, likedStorageKey, loadComments]);
 
   const handleLike = async () => {
     if (!post) return;
@@ -117,7 +127,7 @@ function SinglePost() {
       } catch {
         // ignore storage errors
       }
-    } catch (err) {
+    } catch {
       setIsLiked(!isLiked);
       setLikesCount(prev => isLiked ? prev + 1 : prev - 1);
     }
@@ -136,8 +146,8 @@ function SinglePost() {
         username: (res?.data ?? res)?.username ?? user?.username ?? "You",
         profile_picture: (res?.data ?? res)?.profile_picture ?? user?.profile_picture ?? "",
       };
-      setComments([newComment, ...comments]);
-    } catch (err) {
+      setComments((prev) => [newComment, ...prev]);
+    } catch {
       setCommentText(text);
     } finally {
       setPostingComment(false);
@@ -276,7 +286,7 @@ function SinglePost() {
                           </div>
                           <p className="text-slate-600 text-sm leading-relaxed">{c.content}</p>
                           <div className="text-xs text-slate-400 mt-1">
-                            {new Date(c.created_at).toLocaleDateString("en-US", {
+                            {new Date(c.created_at ?? Date.now()).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                             })}

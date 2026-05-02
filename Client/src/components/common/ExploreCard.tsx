@@ -16,6 +16,15 @@ import type { PostItem } from "../../constants/interface";
 import { likeUnlikePostApiHandler, getPostCommentsApiHandler, addCommentApiHandler } from "../../services/api.service";
 import { useAuth } from "../../contexts/AuthContext";
 
+type PostComment = {
+  id: number | string;
+  username?: string;
+  profile_picture?: string;
+  content?: string;
+  text?: string;
+  [key: string]: unknown;
+};
+
 const categoryColors: Record<string, string> = {
   Tradition: "from-emerald-500 to-teal-500",
   Food: "from-amber-500 to-orange-500",
@@ -51,7 +60,7 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
   });
   const [likesMap, setLikesMap] = useState<Record<number, number>>({});
   const [commentsOpen, setCommentsOpen] = useState<Record<number, boolean>>({});
-  const [commentsMap, setCommentsMap] = useState<Record<number, any[]>>({});
+  const [commentsMap, setCommentsMap] = useState<Record<number, PostComment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
   const [loadingComments, setLoadingComments] = useState<Record<number, boolean>>({});
 
@@ -123,7 +132,8 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
         const res = await getPostCommentsApiHandler(postId);
         const data = res?.data ?? res;
         setCommentsMap(prev => ({ ...prev, [postId]: data ?? [] }));
-      } catch (err) {
+      } catch (error) {
+        void error;
         setCommentsMap(prev => ({ ...prev, [postId]: [] }));
       } finally {
         setLoadingComments(prev => ({ ...prev, [postId]: false }));
@@ -144,8 +154,8 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
       };
       setCommentsMap(prev => ({ ...(prev||{}), [postId]: [hydratedComment, ...(prev[postId] || [])] }));
       setCommentInputs(prev => ({ ...prev, [postId]: "" }));
-    } catch (err) {
-      // ignore for now, optionally show toast
+    } catch (error) {
+      void error;
     }
   };
 
@@ -318,7 +328,7 @@ export default function ExploreCard({ posts, isLoading = false }: ExploreCardPro
                       <div className="text-sm text-slate-500">Loading comments...</div>
                     ) : (
                       <div className="space-y-2 max-h-40 overflow-auto">
-                        {(commentsMap[post.id] || []).slice(0,5).map((c:any)=> (
+                        {(commentsMap[post.id] || []).slice(0,5).map((c) => (
                           <div key={c.id} className="flex items-start gap-3">
                             {c.profile_picture ? (
                               <img

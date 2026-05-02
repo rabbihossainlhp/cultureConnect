@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import type { DirectMessageResponse, RoomJoinedPayload, DmHistoryPayload, Message, RoomUser, User } from "../../../constants/interface";
+import type { DirectMessageResponse, Message, RoomUser } from "../../../constants/interface";
+import type { User } from "../../../contexts/AuthContext";
+import type { DmHistoryPayload, RoomJoinedPayload } from "../../../types";
 
 interface SocketEventHandlers {
   onConnect: () => void;

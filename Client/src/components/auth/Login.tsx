@@ -37,7 +37,7 @@ export default function Login() {
 
     setIsLoading(true);
     try{
-      const res = await loginApiHandler({email,password});
+      await loginApiHandler({email,password});
       await refreshAuth();
       navigate("/dashboard")
 

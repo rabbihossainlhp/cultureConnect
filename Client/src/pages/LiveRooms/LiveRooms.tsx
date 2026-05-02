@@ -25,7 +25,7 @@ const formatMessageTime = (timestamp: string | Date | undefined): string => {
       return "Just now";
     }
     return date.toLocaleString();
-  } catch (error) {
+  } catch {
     return "Just now";
   }
 };
@@ -73,7 +73,7 @@ function LiveRooms() {
         const parsed = JSON.parse(saved);
         return new Map(parsed);
       }
-    } catch (error) {
+    } catch {
       // Silent error handling
     }
     return new Map();
@@ -89,7 +89,7 @@ function LiveRooms() {
         const parsed = JSON.parse(saved);
         return new Set(parsed);
       }
-    } catch (error) {
+    } catch {
       // Silent error handling
     }
     return new Set();
@@ -302,7 +302,7 @@ function LiveRooms() {
       
       const data = Array.from(dmConversations.entries());
       localStorage.setItem(`dmConversations_${userId}`, JSON.stringify(data));
-    } catch (error) {
+    } catch {
       // Silent error handling
     }
   }, [dmConversations, user?.id]);
@@ -315,7 +315,7 @@ function LiveRooms() {
       
       const data = Array.from(unreadDmCount);
       localStorage.setItem(`unreadDmCount_${userId}`, JSON.stringify(data));
-    } catch (error) {
+    } catch {
       // Silent error handling
     }
   }, [unreadDmCount, user?.id]);
@@ -346,7 +346,7 @@ function LiveRooms() {
       );
     });
     return result;
-  }, [rooms, searchTerm, joinedRoomIds]);
+  }, [rooms, searchTerm]);
 
   const fetchRooms = useCallback(async () => {
     
@@ -453,7 +453,7 @@ function LiveRooms() {
       socket.emit("dm:contacts");
     });
 
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", () => {
       setIsConnected(false);
     });
 
@@ -479,7 +479,6 @@ function LiveRooms() {
       if (joinedRoomsArray.length > 0) {
         const joinedSet = new Set(joinedRoomsArray.map(id => Number(id)));
         setJoinedRoomIds(joinedSet);
-      } else {
       }
     });
 
@@ -547,10 +546,6 @@ function LiveRooms() {
     });
 
     // Debug: handler registered
-    socket.onAny((eventName, ...args) => {
-      // Socket event tracking
-    });
-
     socket.on("room:user_joined", (joinedUser: RoomUser) => {
       setRoomUsers((prev) => {
         const exists = prev.some((u) => String(u.userId) === String(joinedUser.userId));
@@ -610,6 +605,7 @@ function LiveRooms() {
             lastMessage: lastMessageText,
             timestamp: lastTimestamp,
           });
+          return updated;
         });
       }
     });
@@ -639,32 +635,28 @@ function LiveRooms() {
 
       // Map backend contact data to dmConversations format
       // This assumes backend returns array of contact_user_id objects
-      try {
-        setDmConversations((prevConversations) => {
-          const newConversations = new Map(prevConversations);
-          
-          contacts.forEach((contactData: Record<string, unknown>) => {
-            // Extract contact user ID (could be contact_user_id or id)
-            const contactUserId = contactData.contact_user_id || contactData.id || contactData.user_id;
-            const contactUsername = contactData.username || contactData.name || `User ${contactUserId}`;
-            
-            if (contactUserId && !newConversations.has(Number(contactUserId))) {
-              newConversations.set(Number(contactUserId), {
-                user: {
-                  userId: Number(contactUserId),
-                  username: String(contactUsername),
-                  country: String(contactData.country || ""),
-                },
-                lastMessage: "No messages yet",
-                timestamp: new Date().toISOString(),
-              });
-            }
-          });
-          
-          return newConversations;
+      setDmConversations((prevConversations) => {
+        const newConversations = new Map(prevConversations);
+
+        contacts.forEach((contactData: Record<string, unknown>) => {
+          const contactUserId = contactData.contact_user_id || contactData.id || contactData.user_id;
+          const contactUsername = contactData.username || contactData.name || `User ${contactUserId}`;
+
+          if (contactUserId && !newConversations.has(Number(contactUserId))) {
+            newConversations.set(Number(contactUserId), {
+              user: {
+                userId: Number(contactUserId),
+                username: String(contactUsername),
+                country: String(contactData.country || ""),
+              },
+              lastMessage: "No messages yet",
+              timestamp: new Date().toISOString(),
+            });
+          }
         });
-      } catch (error) {
-      }
+
+        return newConversations;
+      });
     });
 
     socketRef.current = socket;
@@ -978,7 +970,6 @@ function LiveRooms() {
                 });
               }
               setSidebarOpen(true);
-            } else {
             }
           }
           dismissNotification(notification.id);
@@ -1118,11 +1109,6 @@ function LiveRooms() {
           <div className="flex-1 overflow-y-auto min-h-0">
             {viewMode === "rooms" ? (
               <>
-                {(() => {
-                  if (filteredRooms.length > 0) {
-                  }
-                  return null;
-                })()}
                 {filteredRooms.length === 0 ? (
                   <div className="p-4 text-center">
                     <p className="text-sm text-slate-500">No rooms found</p>
@@ -1168,7 +1154,6 @@ function LiveRooms() {
                                 // Do NOT auto-join the room here - just view the messages
                                 if (socket && socket.connected) {
                                   socket.emit("room:load", { roomId: roomIdNum });
-                                } else {
                                 }
                               }}
                               className="flex-1 text-left"
