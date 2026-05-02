@@ -58,14 +58,11 @@ function UserDashBoard() {
     });
 
 
-    socket.on('room:room-joined',(data)=>{
-      });
+    socket.on('room:room-joined',()=>{});
 
-      socket.on('room:user_left',(userData)=>{
-      });
+      socket.on('room:user_left',()=>{});
 
-      socket.on('chat:new', (messageData)=>{
-      });
+      socket.on('chat:new', ()=>{});
 
 
     socket.on('connect',()=>{
@@ -77,8 +74,7 @@ function UserDashBoard() {
 
       
     });
-    socket.on('disconnect',(reason)=>{
-    });
+    socket.on('disconnect',()=>{});
 
     return ()=>{
       socket.emit('room:leave','room-1',{
@@ -88,7 +84,7 @@ function UserDashBoard() {
       socket.disconnect();
     }
 
-  },[])
+  },[user?.country, user?.email, user?.username])
 
   return (
     <section className="min-h-screen bg-linear-to-b from-amber-50 via-white to-orange-50 px-3 pb-8 pt-22 sm:px-6 sm:pb-10 sm:pt-24 lg:px-8">

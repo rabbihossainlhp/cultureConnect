@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import type { DirectMessage, DirectMessageResponse, DmTargetUser } from "../../../constants/interface";
+import type { DirectMessage, DmTargetUser } from "../../../constants/interface";
 
 export const useDmHandler = () => {
   // DM state
@@ -14,7 +14,7 @@ export const useDmHandler = () => {
         return new Map(parsed);
       }
     } catch (error) {
-      // Silent error handling
+      void error;
     }
     return new Map();
   });
@@ -27,7 +27,7 @@ export const useDmHandler = () => {
         return new Set(parsed);
       }
     } catch (error) {
-      // Silent error handling
+      void error;
     }
     return new Set();
   });
@@ -62,7 +62,7 @@ export const useDmHandler = () => {
       const data = Array.from(dmConversations.entries());
       localStorage.setItem("dmConversations", JSON.stringify(data));
     } catch (error) {
-      // Silent error handling
+      void error;
     }
   }, [dmConversations]);
 
@@ -72,7 +72,7 @@ export const useDmHandler = () => {
       const data = Array.from(unreadDmCount);
       localStorage.setItem("unreadDmCount", JSON.stringify(data));
     } catch (error) {
-      // Silent error handling
+      void error;
     }
   }, [unreadDmCount]);
 

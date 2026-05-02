@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { getRoomListApiHandler } from "../../../services/api.service";
-import type { RoomListItem, UiRoom, Message, RoomUser } from "../../../constants/interface";
+import type { RoomListItem, Message, RoomUser } from "../../../constants/interface";
+import type { UiRoom } from "../../../types";
 
 const toSlug = (value: string) =>
   value
@@ -13,7 +14,7 @@ const toSlug = (value: string) =>
 
 const mapRoomListItemToUiRoom = (room: RoomListItem): UiRoom => ({
   id: String(room.id),
-  roomId: room.id,
+  roomId: Number(room.id),
   name: room.name,
   language: room.language,
   slug: toSlug(room.name),

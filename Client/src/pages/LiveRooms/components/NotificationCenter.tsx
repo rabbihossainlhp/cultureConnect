@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X, Bell } from "lucide-react";
+
+type NotificationMetadata = {
+  senderId?: number | string;
+  [key: string]: unknown;
+};
 
 export interface ToastNotification {
   id: string;
@@ -9,7 +14,7 @@ export interface ToastNotification {
   type: "dm" | "room";
   metadata?: {
     senderId?: number | string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -25,7 +30,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onClickNotification,
 }) => {
   return (
-    <div className="fixed top-20 right-4 z-[9999] space-y-2 max-w-sm">
+    <div className="fixed top-20 right-4 z-9999 space-y-2 max-w-sm">
       {notifications.map((notification) => (
         <div
           key={notification.id}
@@ -75,7 +80,7 @@ export const useNotifications = () => {
     senderName: string,
     messageText: string,
     type: "dm" | "room" = "dm",
-    metadata?: { senderId?: number | string; [key: string]: any }
+    metadata?: NotificationMetadata
   ) => {
     // eslint-disable-next-line react-hooks/purity
     const id = `${Date.now()}-${Math.random()}`;

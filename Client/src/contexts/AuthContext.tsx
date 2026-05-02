@@ -2,7 +2,7 @@ import {createContext,useContext,useEffect,useMemo,useState} from 'react';
 import { meApiHandler,logoutApiHandler } from '../services/api.service';
 
 
-type User = {id?: number; username:string; email:string; country:string; bio?: string; native_language?: string; profile_picture?: string;};
+export type User = {id?: number; username:string; email:string; country:string; bio?: string; native_language?: string; profile_picture?: string;};
 
 
 type AuthContextType = {
@@ -59,6 +59,7 @@ export function AuthProvider ({children}:{children:React.ReactNode}){
 };
 
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth (){
     const cntx = useContext(AuthContext);
     if(!cntx) throw new Error('useAuth must be used inside AuthProvider');

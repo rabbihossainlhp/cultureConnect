@@ -17,7 +17,7 @@ export const formatMessageTime = (timestamp: string | Date | undefined): string 
       return "Just now";
     }
     return date.toLocaleString();
-  } catch (error) {
+  } catch {
     return "Just now";
   }
 };
@@ -41,7 +41,7 @@ export const formatRelativeTime = (timestamp: string | undefined): string => {
     if (diffDays < 7) return `${diffDays}d ago`;
     
     return date.toLocaleDateString();
-  } catch (error) {
+  } catch {
     return "Just now";
   }
 };

@@ -1,4 +1,4 @@
-import { Rocket, Target, Trophy, Flame, Zap, BookOpen, Users, Award, Sparkles } from "lucide-react";
+import { Rocket, Target, Trophy, Flame, Zap, BookOpen, Users, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 export default function Missions() {
@@ -16,7 +16,7 @@ export default function Missions() {
   };
 
   return (
-    <section className="min-h-[calc(100vh-88px)] bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 py-20 px-4 md:px-8">
+    <section className="min-h-[calc(100vh-88px)] bg-linear-to-br from-slate-50 via-indigo-50 to-purple-50 py-20 px-4 md:px-8">
       <div className="mx-auto max-w-6xl">
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
@@ -32,7 +32,7 @@ export default function Missions() {
             <div>
               <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-4">
                 Learn Through
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                <span className="block text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-purple-600">
                   Exciting Missions
                 </span>
               </h1>
@@ -49,7 +49,7 @@ export default function Missions() {
                 { icon: Flame, title: "Build Streaks", desc: "Stay consistent and maintain daily streaks" },
               ].map((feature, idx) => (
                 <div key={idx} className="flex gap-4 items-start">
-                  <div className="p-3 rounded-lg bg-indigo-100 text-indigo-600 flex-shrink-0">
+                  <div className="p-3 rounded-lg bg-indigo-100 text-indigo-600 shrink-0">
                     <feature.icon size={24} />
                   </div>
                   <div>
@@ -74,7 +74,7 @@ export default function Missions() {
                 />
                 <button
                   onClick={handleNotify}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition transform hover:scale-105"
+                  className="px-6 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition transform hover:scale-105"
                 >
                   Notify Me
                 </button>
@@ -141,7 +141,7 @@ export default function Missions() {
             Estimated Launch: <span className="font-bold text-indigo-600">Q2 2026</span>
           </p>
           <div className="inline-block">
-            <div className="px-6 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold animate-pulse">
+            <div className="px-6 py-3 rounded-full bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold animate-pulse">
               More exciting features coming soon... 🚀
             </div>
           </div>
