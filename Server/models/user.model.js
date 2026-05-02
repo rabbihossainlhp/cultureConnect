@@ -1,5 +1,5 @@
 //dependencies.....
-const db = require('../config/db');
+const {dbConnection }  = require('../config/db');
 
 const User = {
     tableName : 'users',
@@ -26,7 +26,7 @@ const User = {
 
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
         }catch(err){
             console.error('Error creating user table:', err)
             throw err;
@@ -39,7 +39,7 @@ const User = {
                         ADD COLUMN IF NOT EXISTS joined_rooms INTEGER[] DEFAULT '{}'::integer[]`;
         
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log('joined_rooms col added');
         }catch(err){
             console.error('joined_rooms column already exists: ',err.message);
@@ -55,7 +55,7 @@ const User = {
                         `;
         
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log('initialized joined rooms for existing user');
         }catch(err){
             console.error('initialize join room for existing user erro....: ',err.message);
@@ -71,7 +71,7 @@ const User = {
                         `;
         
         try{
-            const result = await db.query(query);
+            const result = await dbConnection.query(query);
             console.log(`Clean up ${result.rowCount} users' joined_rooms arrays`);
         }catch(err){
             console.error('Clean up error..: ',err.message);
@@ -89,7 +89,7 @@ const User = {
                         `;
         
         try{
-            const result = await db.query(query);
+            const result = await dbConnection.query(query);
             console.log(`Clean up ${result.rowCount} users' joined_rooms arrays`);
         }catch(err){
             console.error('Clean up error..: ',err.message);
@@ -106,7 +106,7 @@ const User = {
                 `
 
         try{
-            const result = await db.query(query);
+            const result = await dbConnection.query(query);
             console.log(`Password and UID col added ${result.fields} `);
         }catch(err){
             console.error('Password and UID col addederror..: ',err.message);

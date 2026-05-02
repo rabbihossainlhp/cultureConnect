@@ -1,5 +1,5 @@
 //dependencies...
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 const bcrypt = require('bcrypt');
 
 const createRoomController = async (req,res) =>{
@@ -34,7 +34,7 @@ const createRoomController = async (req,res) =>{
 
 
 
-        const matchedSlug = await db.query(slugQuery,[slug]);
+        const matchedSlug = await dbConnection.query(slugQuery,[slug]);
 
         if(matchedSlug.rows.length > 0){
             return res.status(400).json({
@@ -50,7 +50,7 @@ const createRoomController = async (req,res) =>{
             RETURNING id,name,slug,language,visibility,max_capacity as capacity
         `;
 
-        const createdRoom = await db.query(createRoomQuery,[
+        const createdRoom = await dbConnection.query(createRoomQuery,[
             slug,
             roomName,
             language,
@@ -84,7 +84,7 @@ const getRoomListController = async(req,res) =>{
             FROM rooms
         `;
         
-        const roomList = await db.query(roomListQuery);
+        const roomList = await dbConnection.query(roomListQuery);
         if(roomList.rows.length === 0){
             return res.status(404).json({
                 success:false,

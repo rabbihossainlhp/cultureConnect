@@ -14,21 +14,25 @@ const dbConnection = new Pool({
 })
 
 
-dbConnection.query('SELECT NOW()', (err,res)=>{
-    if(err){
-        console.log('Database Connectin failed:!! ', err);
-    }else{
-        console.log('Database Connected Successfully!! ',res)
+const connectDB = async()=>{
+    try{
+        const res  = await dbConnection.query('SELECT NOW()');
+        console.log("Database connection Successfully!!");
+
+    }catch(err){
+        console.log("Database connection failed: ",err)
     }
-})
 
 
-dbConnection.on('connect',()=>{
-    console.log('New Database connection established..');
-})
-dbConnection.on('error',(err)=>{
-    console.log('Database error: ',err);
-})
+    dbConnection.on('connect',()=>{
+        console.log('New Database connection established..');
+    })
+    dbConnection.on('error',(err)=>{
+        console.log('Database error: ',err);
+    })
+
+}
+
 
 
 
@@ -42,11 +46,17 @@ const gracefulShutdown = async () =>{
 
 }
 
-process.on('SIGTERM',gracefulShutdown);
-process.on('SIGINT',gracefulShutdown);
+if(process.env.NODE_ENV !== 'test'){
+    process.on('SIGTERM',gracefulShutdown);
+    process.on('SIGINT',gracefulShutdown);
+}
 
 
 
 
 
-module.exports = dbConnection;
+
+module.exports = {
+    dbConnection,
+    connectDB
+};

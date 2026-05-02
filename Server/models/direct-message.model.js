@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 const DirectMessage = {
@@ -23,7 +23,7 @@ const DirectMessage = {
 
 
         try{
-            await db.query(messageQuery);
+            await dbConnection.query(messageQuery);
             
         }catch(err){
             console.error('Error catching during create DM table');
@@ -40,7 +40,7 @@ const DirectMessage = {
         `;
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log("media_url and type column added in direct_message table")
         }catch(err){
             console.error("ADD media column error ondirect_message: ",err.message)

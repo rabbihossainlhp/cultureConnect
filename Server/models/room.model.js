@@ -1,5 +1,5 @@
 //dependencies.....
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 const Rooms = {
     tableName : 'rooms',
@@ -26,7 +26,7 @@ const Rooms = {
 
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
         }catch(err){
             console.error('Error creating rooms table:', err)
             throw err;
@@ -39,7 +39,7 @@ const Rooms = {
                         ADD COLUMN IF NOT EXISTS room_password VARCHAR(255) DEFAULT NULL`;
         
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log('room_password col added');
         }catch(err){
             console.error('Password column already exists: ',err.message);

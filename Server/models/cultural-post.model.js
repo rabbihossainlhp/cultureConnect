@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 const CulturalPost = {
@@ -25,7 +25,7 @@ const CulturalPost = {
         `;
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log("Created cultural post table in DB");
         }catch(err){
             console.error('Error creating cultural post table in DB:  ', err.message)

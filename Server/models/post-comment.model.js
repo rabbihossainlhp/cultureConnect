@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 
@@ -24,7 +24,7 @@ const PostComment = {
         `;
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log("Created comments table in DB");
         }catch(err){
             console.error('Error creating comments table in DB:  ', err.message)

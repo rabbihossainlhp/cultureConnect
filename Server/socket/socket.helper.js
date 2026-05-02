@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 const normalizedRoomId = (value) =>{
     const n = Number(value);
@@ -21,7 +21,7 @@ const ensureActiveRoom = async (roomId) =>{
         LIMIT 1
     `;
 
-    const roomResult = await db.query(roomQuery,[roomId]);
+    const roomResult = await dbConnection.query(roomQuery,[roomId]);
     return roomResult.rows[0] || null;
 };
 
@@ -40,7 +40,7 @@ const fetchOnlineUsers = async(roomId)=>{
         ORDER BY u.username ASC
     `;
 
-    const usersResult = await db.query(usersQuery,[roomId]);
+    const usersResult = await dbConnection.query(usersQuery,[roomId]);
     return usersResult.rows;
 };
 
@@ -63,7 +63,7 @@ const fetchRecentMessages = async(roomId) =>{
         LIMIT 20
     `;
 
-    const result = await db.query(messageQuery,[roomId]);
+    const result = await dbConnection.query(messageQuery,[roomId]);
     return result.rows.reverse();
 };
 
@@ -78,7 +78,7 @@ const setParticipantsOnline = async (roomId,userId) =>{
             left_at = NULL
     `;
 
-    await db.query(onlineUserQuery,[roomId,userId]);
+    await dbConnection.query(onlineUserQuery,[roomId,userId]);
 };
 
 
@@ -91,7 +91,7 @@ const setParticipantsOffline = async (roomId,userId) =>{
         AND user_id = $2
     `;
 
-    await db.query(offlineUserQuery,[roomId,userId]);
+    await dbConnection.query(offlineUserQuery,[roomId,userId]);
 };
 
 
@@ -106,7 +106,7 @@ const isParticipantsOnline = async(roomId,userId) =>{
         LIMIT 1
     `;
 
-    const result = await db.query(membershipsQuery,[roomId,userId]);
+    const result = await dbConnection.query(membershipsQuery,[roomId,userId]);
     return result.rows.length > 0;
 };
 
@@ -129,7 +129,7 @@ const addRommToUserJoinedRoom = async (userId,roomId) =>{
     `;
 
     try{
-        const result = await db.query(query,[roomId,userId]);
+        const result = await dbConnection.query(query,[roomId,userId]);
         if(result.rows.length>0){
             console.log(`Room ${roomId} added to user ${userId}'s joined_rooms:`,result.rows[0].joined_rooms);
             return result.rows[0].joined_rooms;
@@ -154,7 +154,7 @@ const removeRoomFromUserJoinedRooms = async (userId, roomId) => {
     `;
     
     try {
-        const result = await db.query(query, [roomId, userId]);
+        const result = await dbConnection.query(query, [roomId, userId]);
         if (result.rows.length > 0) {
             console.log(` Room ${roomId} removed from user ${userId}'s joined_rooms:`, result.rows[0].joined_rooms);
             return result.rows[0].joined_rooms;
@@ -175,7 +175,7 @@ const getUserJoinedRooms = async(userId) =>{
     `
 
     try {
-        const result = await db.query(query, [userId]);
+        const result = await dbConnection.query(query, [userId]);
         if (result.rows.length > 0) {
             const joinedRooms = result.rows[0].joined_rooms || [];
             console.log(` User ${userId} is in rooms: ${joinedRooms}`);

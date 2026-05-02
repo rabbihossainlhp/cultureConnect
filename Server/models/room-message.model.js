@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 const RoomMessage = {
@@ -22,7 +22,7 @@ const RoomMessage = {
         `;
 
         try{
-            await db.query(query)
+            await dbConnection.query(query)
         }catch(err){
             console.error('Error catching create RoomMessage table',err);
             throw err;
@@ -36,7 +36,7 @@ const RoomMessage = {
         `;
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
             console.log("media_url column added in room messages table")
         }catch(err){
             console.error("ADD media column error on room message: ",err.message)

@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 const RoomParticipants = {
@@ -24,7 +24,7 @@ const RoomParticipants = {
 
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
         }catch(err){
             console.error('Error catching during create room participants table');
             throw err;
