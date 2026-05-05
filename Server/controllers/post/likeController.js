@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 
 
 const likeUnlikePostController = async(req,res)=>{
@@ -18,7 +18,7 @@ const likeUnlikePostController = async(req,res)=>{
             SELECT likes FROM cultural_post WHERE id=$1
         `;
 
-        const checkPost = await db.query(checkQuery,[postId]);
+        const checkPost = await dbConnection.query(checkQuery,[postId]);
 
         if(checkPost.rows.length === 0){
             return res.status(404).json({
@@ -47,7 +47,7 @@ const likeUnlikePostController = async(req,res)=>{
 
         if(likedBy.includes(userId)){
 
-            const result = await db.query(updateQueryForLikeUnlike,[updated,postId]);
+            const result = await dbConnection.query(updateQueryForLikeUnlike,[updated,postId]);
             return res.status(200).json({
                 success:true,
                 message:"Post Unliked successfully",
@@ -60,7 +60,7 @@ const likeUnlikePostController = async(req,res)=>{
         likedBy.push(userId);
 
 
-        const result = await db.query(updateQueryForLikeUnlike,[likedBy,postId]);
+        const result = await dbConnection.query(updateQueryForLikeUnlike,[likedBy,postId]);
 
         return res.status(200).json({
             success:true,

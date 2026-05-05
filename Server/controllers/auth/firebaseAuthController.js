@@ -1,6 +1,6 @@
 //dependencies...
 const jwt = require('jsonwebtoken');
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 
 
 
@@ -40,7 +40,7 @@ const firebaseAuthController = async(req,res) =>{
         }
 
         const checkUser = `SELECT id,username,email,profile_picture FROM users WHERE email = $1`;
-        const existUser = await db.query(checkUser,[email]);
+        const existUser = await dbConnection.query(checkUser,[email]);
         if(existUser.rows.length>0){
             const token = jwt.sign(
                     {
@@ -69,7 +69,7 @@ const firebaseAuthController = async(req,res) =>{
             RETURNING id,email,username,country,native_language
         `;
 
-        const result = await db.query(createUserQuery,[
+        const result = await dbConnection.query(createUserQuery,[
             email,
             username,
             country || "Spain",

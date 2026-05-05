@@ -1,23 +1,23 @@
 //dependencies...
-const redisClient = require('../config/redis');
+const {connectRedisClient,client} = require('../config/redis');
 
 
 const saveMessageToRedis = async(roomId,message) =>{
     try{
         const key = `room:${roomId}:messages`;
 
-        await redisClient.rPush(key,JSON.stringify(message));
+        await client.rPush(key,JSON.stringify(message));
 
-        const messageCount = await redisClient.lLen(key);
+        const messageCount = await client.lLen(key);
 
         if(messageCount>100){
-            await redisClient.lTrim(key,-100,-1);
+            await client.lTrim(key,-100,-1);
         }
 
         console.log('Message saved to Redis for room --> ', roomId);
 
     }catch(error){
-        console.error("Save error to Redis..",error.message);
+        console.error("Save error to Redis..",error);
     }
 }
 
@@ -27,7 +27,7 @@ const getMessagesFromRedis = async (roomId) =>{
     try{
         const key = `room:${roomId}:messages`;
 
-        const messages = await redisClient.lRange(key,0,-1);
+        const messages = await client.lRange(key,0,-1);
 
         return messages.map(msg =>JSON.parse(msg));
     }catch(err){
@@ -41,7 +41,7 @@ const getMessagesFromRedis = async (roomId) =>{
 const clearRoomMessagesFromRedis = async (roomId)=>{
     try{
         const key = `room:${roomId}:messages`;
-        await redisClient.del(key);
+        await client.del(key);
         console.log("Cleard messages from redis of room:",roomId);
     }catch(err){
         console.error(`Redis clear error: `,err.message);
@@ -65,11 +65,11 @@ const saveDmToRedis = async(currentUserId, targetUserId, message) =>{
     try{
         const dmKey = getDmRoomKey(currentUserId,targetUserId);
         //add msg end of the list...
-        await redisClient.rPush(dmKey,JSON.stringify(message));
+        await client.rPush(dmKey,JSON.stringify(message));
 
-        const messageCount = await redisClient.lLen(dmKey);
+        const messageCount = await client.lLen(dmKey);
         if(messageCount>50){
-            await redisClient.lTrim(dmKey,-50,-1);
+            await client.lTrim(dmKey,-50,-1);
         }
 
         console.log('DM saved to redis: '+currentUserId + '---->' + targetUserId);
@@ -87,7 +87,7 @@ const getDmFromRedis = async(currentUserId, targetUserId) =>{
     try{
         const dmKey = getDmRoomKey(currentUserId,targetUserId);
         //fetch message
-        const messages = await redisClient.lRange(dmKey,0,-1);
+        const messages = await client.lRange(dmKey,0,-1);
         return messages.map(msg=>JSON.parse(msg));
 
     }catch(er){
@@ -105,7 +105,7 @@ const clearDmFromRedis = async(currentUserId, targetUserId) =>{
     try{
         const dmKey = getDmRoomKey(currentUserId,targetUserId);
         //delete the key...
-        await redisClient.del(dmKey);
+        await client.del(dmKey);
 
     }catch(er){
         console.error('Redis DM clear error: ', er.message);
@@ -117,7 +117,7 @@ const clearDmFromRedis = async(currentUserId, targetUserId) =>{
 
 const batchSaveDmToRedis = async(currentUserId,targetUserId,messages)=>{
     const dmKey = getDmRoomKey(currentUserId,targetUserId);
-    const pipeline = redisClient.multi();
+    const pipeline = client.multi();
 
     for(const msg of messages){
         pipeline.rPush(dmKey,JSON.stringify(msg));
@@ -125,9 +125,9 @@ const batchSaveDmToRedis = async(currentUserId,targetUserId,messages)=>{
 
     await pipeline.exec();
 
-    const count = await redisClient.lLen(dmKey);
+    const count = await client.lLen(dmKey);
     if(count>50){
-        await redisClient.lTrim(dmKey,-50,-1);
+        await client.lTrim(dmKey,-50,-1);
     }
 }
 

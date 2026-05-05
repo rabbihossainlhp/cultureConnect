@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 const jwt = require("jsonwebtoken");
 
 
@@ -20,7 +20,7 @@ const socketAuthMiddleware = async (socket,next) =>{
         const token = matchToken[1];
 
         const decoded = jwt.verify(token,process.env.JWT_SECRET);
-        const userResult = await db.query('SELECT id,email,username,country FROM users WHERE email = $1',[decoded.email]);
+        const userResult = await dbConnection.query('SELECT id,email,username,country FROM users WHERE email = $1',[decoded.email]);
         
         if(userResult.rows.length === 0){
             return next(new Error('User not found'));

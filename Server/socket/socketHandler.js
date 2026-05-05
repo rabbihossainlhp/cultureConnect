@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 const bcrypt = require('bcrypt');
 const { getMessagesFromRedis, saveMessageToRedis } = require('../redis/redis.helper');
 const {
@@ -75,7 +75,7 @@ const handleSocketEvents = (io,socket) =>{
                                 messages:recentMessages
                             })
 
-                            const joinedRoomId = await db.query('SELECT joined_rooms FROM users WHERE id=$1',[user.id])
+                            const joinedRoomId = await dbConnection.query('SELECT joined_rooms FROM users WHERE id=$1',[user.id])
 
                             socket.emit('user:info',{
                                 userId:user.id,
@@ -128,7 +128,7 @@ const handleSocketEvents = (io,socket) =>{
                     })
                 }
 
-                const findRoom = await db.query(`SELECT * FROM rooms WHERE id=$1`,[roomId]);
+                const findRoom = await dbConnection.query(`SELECT * FROM rooms WHERE id=$1`,[roomId]);
 
                 if(!findRoom.rows[0] || !findRoom.rows[0].room_password){
                     return socket.emit('socket:error',{
@@ -285,7 +285,7 @@ const handleSocketEvents = (io,socket) =>{
             `;
 
 
-            db.query(insertQuery,[roomId,user.id, text||"",messageType,mediaUrl || null])
+            dbConnection.query(insertQuery,[roomId,user.id, text||"",messageType,mediaUrl || null])
                 .then((insertResult)=>{
                     const saved = insertResult.rows[0];
                     console.log(`Message permanently saved to DB: ${saved.id}`);
@@ -354,7 +354,7 @@ const handleSocketEvents = (io,socket) =>{
                 ORDER BY contact_user_id DESC
             `;
 
-            const listContacts = await db.query(cotactsListQuery,[user.id]);
+            const listContacts = await dbConnection.query(cotactsListQuery,[user.id]);
             if(listContacts.rows.length === 0){
                 return socket.emit('socket:error',{
                     code:'NOT FOUND LIST',

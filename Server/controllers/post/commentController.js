@@ -1,4 +1,4 @@
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 
 const addCommentController = async(req,res)=>{
     try{
@@ -12,7 +12,7 @@ const addCommentController = async(req,res)=>{
             });
         }
 
-        const checkPost = await db.query(`SELECT id FROM cultural_post WHERE id=$1`,[postId]);
+        const checkPost = await dbConnection.query(`SELECT id FROM cultural_post WHERE id=$1`,[postId]);
         
         if(checkPost.rows.length === 0){
             return res.status(404).json({
@@ -27,10 +27,10 @@ const addCommentController = async(req,res)=>{
             RETURNING id,post_id,author_id,content,created_at
         `;
 
-        const comment = await db.query(insertCommentQuery,[postId,authorId,content.trim()]);
+        const comment = await dbConnection.query(insertCommentQuery,[postId,authorId,content.trim()]);
 
         //update comment count on post's table....
-        await db.query(`UPDATE cultural_post SET comments_count = comments_count + 1 WHERE id = $1`,[postId])
+        await dbConnection.query(`UPDATE cultural_post SET comments_count = comments_count + 1 WHERE id = $1`,[postId])
 
         return res.status(200).json({
             success:true,
@@ -65,7 +65,7 @@ const getCommentController = async(req,res)=>{
             });
         }
 
-        const checkPost = await db.query(`SELECT id FROM cultural_post WHERE id=$1`,[postId]);
+        const checkPost = await dbConnection.query(`SELECT id FROM cultural_post WHERE id=$1`,[postId]);
         
         if(checkPost.rows.length === 0){
             return res.status(404).json({
@@ -91,7 +91,7 @@ const getCommentController = async(req,res)=>{
             ORDER BY pc.created_at DESC
         `;
 
-        const comments = await db.query(getCommentQuery,[postId]);
+        const comments = await dbConnection.query(getCommentQuery,[postId]);
 
         return res.status(200).json({
             success:true,

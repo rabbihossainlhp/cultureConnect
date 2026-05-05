@@ -1,4 +1,4 @@
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 const bcrypt = require('bcrypt');
 
 
@@ -37,7 +37,7 @@ const updateProfileController = async (req,res) =>{
                 SELECT id,email,username,password,country FROM users WHERE id=$1
             `;
 
-            const result = await db.query(userQuery,[user.id]);
+            const result = await dbConnection.query(userQuery,[user.id]);
             if(result.rows.length === 0){
                 return res.status(404).json({
                     success:false,
@@ -60,7 +60,7 @@ const updateProfileController = async (req,res) =>{
                 WHERE id = $2 AND email = $3
             `;
 
-            await db.query(passwordUpdateQuery,[hashPass,user.id,user.email]);
+            await dbConnection.query(passwordUpdateQuery,[hashPass,user.id,user.email]);
             return res.status(200).json({
                     success:true,
                     message:"Password Changed succesfully"
@@ -79,7 +79,7 @@ const updateProfileController = async (req,res) =>{
                 RETURNING *
             `;
 
-            const updatedUser = await db.query(updateUserQuery,[nativeLanguage?nativeLanguage.trim():user.native_language, profilePicture?profilePicture:user.profile_picture,bio?bio:"", country?country.trim():user.country,user.id,user.email]);
+            const updatedUser = await dbConnection.query(updateUserQuery,[nativeLanguage?nativeLanguage.trim():user.native_language, profilePicture?profilePicture:user.profile_picture,bio?bio:"", country?country.trim():user.country,user.id,user.email]);
             if(updatedUser.rows.length === 0){
                 return res.status(400).json({
                     success:false,

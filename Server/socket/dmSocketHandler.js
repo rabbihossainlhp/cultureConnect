@@ -1,6 +1,6 @@
 // Dependencies
 const DirectMessage = require("../models/direct-message.model");
-const db = require("../config/db");
+const {dbConnection} = require("../config/db");
 const { saveDmToRedis, getDmFromRedis,getDmRoomKey,clearDmFromRedis, batchSaveDmToRedis } = require("../redis/redis.helper");
 
 
@@ -94,7 +94,7 @@ const areBothInRoom = async (roomId, userId1, userId2, io) => {
 const fetchTargetUser = async (userId) => {
   try {
     const query = `SELECT id, username, country,profile_picture FROM users WHERE id = $1`;
-    const result = await db.query(query, [userId]);
+    const result = await dbConnection.query(query, [userId]);
     
     if (result.rows.length === 0) {
       return null;
@@ -141,7 +141,7 @@ const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
             ORDER BY created_at ASC
             LIMIT $3
         `;
-        const result = await db.query(query,[currentUserId,targetUserId, limit]);
+        const result = await dbConnection.query(query,[currentUserId,targetUserId, limit]);
         return result.rows;
     }catch(err){
         console.error('Error fetching DM history: ',err.message);
@@ -156,7 +156,7 @@ const saveDmMessage = async (currentUserId,targetUserId,text,messageType,mediaUr
             VALUES($1,$2,$3,$4,$5)
             RETURNING id,sender_user_id,receiver_user_id,message_text,created_at
         `;
-        const result = await db.query(query,[currentUserId,targetUserId, text,messageType,mediaUrl]);
+        const result = await dbConnection.query(query,[currentUserId,targetUserId, text,messageType,mediaUrl]);
         return result.rows[0];
     }catch(err){
         console.error('Error saving DM message: ',err.message);

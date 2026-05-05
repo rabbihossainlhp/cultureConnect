@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const {sendOtpMail} = require('../../config/email');
@@ -25,7 +25,7 @@ const loginController = async(req,res) =>{
             SELECT username,email,password,country FROM users WHERE email=$1;
         `;
 
-        const result = await db.query(loginQuery,[email]);
+        const result = await dbConnection.query(loginQuery,[email]);
 
         if(result.rows.length === 0){
             return res.status(404).json({
@@ -105,7 +105,7 @@ const registerController = async(req,res) =>{
         }
 
         const checkUser = `SELECT id FROM users WHERE email = $1`;
-        const existUser = await db.query(checkUser,[email]);
+        const existUser = await dbConnection.query(checkUser,[email]);
         if(existUser.rows.length>0){
             return res.status(409).json({
                 success:false,
@@ -115,9 +115,9 @@ const registerController = async(req,res) =>{
 
 
         const checkPendingOtpQuery = `SELECT id FROM email_verification_codes WHERE email=$1`;
-        const pendingResult = await db.query(checkPendingOtpQuery,[email]);
+        const pendingResult = await dbConnection.query(checkPendingOtpQuery,[email]);
         if(pendingResult.rows.length>0){
-            await db.query(`DELETE FROM email_verification_codes WHERE email=$1`,[email]);
+            await dbConnection.query(`DELETE FROM email_verification_codes WHERE email=$1`,[email]);
         }
 
 
@@ -145,7 +145,7 @@ const registerController = async(req,res) =>{
             RETURNING id;
         `
 
-        await db.query(insertOtpUserQuery,[
+        await dbConnection.query(insertOtpUserQuery,[
             email,
             otp,
             JSON.stringify(userDataForVerificationTable),
@@ -155,7 +155,7 @@ const registerController = async(req,res) =>{
 
         const emailSent = await sendOtpMail(email,otp);
         if(!emailSent){
-            await db.query(`DELETE FROM email_verification_codes WHERE email=$1`,[email]);
+            await dbConnection.query(`DELETE FROM email_verification_codes WHERE email=$1`,[email]);
             return res.status(500).json({
                 success:false,
                 message:'Failed to send email, Try again'
@@ -217,7 +217,7 @@ const verifyOtpController = async (req,res)=>{
         }
 
         const findVerificationQuery = `SELECT * FROM email_verification_codes WHERE email = $1`;
-        const verificationResult = await db.query(findVerificationQuery,[email]);
+        const verificationResult = await dbConnection.query(findVerificationQuery,[email]);
 
         if(verificationResult.rows.length === 0){
             return res.status(404).json({
@@ -232,7 +232,7 @@ const verifyOtpController = async (req,res)=>{
         const expireTime = new Date(verification.expires_at);
 
         if(now>expireTime){
-            await db.query(`DELETE FROM email_verification_codes WHEERE id=$1`,[verification.id]);
+            await dbConnection.query(`DELETE FROM email_verification_codes WHEERE id=$1`,[verification.id]);
 
             return res.status(410).json({
                 success:false,
@@ -244,7 +244,7 @@ const verifyOtpController = async (req,res)=>{
         if(verification.otp_code !== otp){
             const newAttempts = verification.attempts +1;
             if(newAttempts>=5){
-                await db.query(`DELETE FROM email_verification_codes WHERE id=$1`,[verification.id]);
+                await dbConnection.query(`DELETE FROM email_verification_codes WHERE id=$1`,[verification.id]);
 
                 return res.status(429).json({
                     success:false,
@@ -253,7 +253,7 @@ const verifyOtpController = async (req,res)=>{
             }
 
             //update attempt count even thats wrong
-            await db.query(`UPDATE email_verification_codes SET attempts=$1 WHERE id=$2`,[newAttempts,verification.id]);
+            await dbConnection.query(`UPDATE email_verification_codes SET attempts=$1 WHERE id=$2`,[newAttempts,verification.id]);
 
             return res.status(401).json({
                 success:false,
@@ -271,7 +271,7 @@ const verifyOtpController = async (req,res)=>{
             RETURNING id,email,username,country,native_language
         `;
 
-        const result = await db.query(createUserQuery,[
+        const result = await dbConnection.query(createUserQuery,[
             email,
             userData.password,
             userData.username,
@@ -281,7 +281,7 @@ const verifyOtpController = async (req,res)=>{
 
         const createdUser = result.rows[0];
 
-        await db.query(`DELETE FROM email_verification_codes WHERE id=$1`,[verification.id]);
+        await dbConnection.query(`DELETE FROM email_verification_codes WHERE id=$1`,[verification.id]);
 
         const token = jwt.sign(
             {

@@ -35,6 +35,7 @@ export type UiRoom = {
   capacity?: number;
   description?: string;
   createdAt: string;
+  hostUserId?: number;
 };
 
 

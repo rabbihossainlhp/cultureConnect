@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../../config/db');
+const {dbConnection} = require('../../config/db');
 
 
 const createPostController = async (req,res) =>{
@@ -31,7 +31,7 @@ const createPostController = async (req,res) =>{
             RETURNING id,author_id,title,description,tags,slug,post_image
         `;
 
-        const createdPost = await db.query(postQuery,[title,authorId,description,tagsArray,slug,postImage,readtime]);
+        const createdPost = await dbConnection.query(postQuery,[title,authorId,description,tagsArray,slug,postImage,readtime]);
 
         if(createdPost.rows.length === 0){
             return res.status(400).json({
@@ -79,7 +79,7 @@ const getPostController = async (req,res)=>{
             ORDER BY created_at DESC
         `;
 
-        const allPost = await db.query(getPostQuery);
+        const allPost = await dbConnection.query(getPostQuery);
 
         if(allPost.rows.length === 0){
             return res.status(404).json({

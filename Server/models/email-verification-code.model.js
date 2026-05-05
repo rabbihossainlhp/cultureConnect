@@ -1,5 +1,5 @@
 //dependencies....
-const db = require('../config/db');
+const {dbConnection} = require('../config/db');
 
 
 
@@ -22,7 +22,7 @@ const EmailVerificationCode = {
         `;
 
         try{
-            await db.query(query);
+            await dbConnection.query(query);
         }catch(err){
             console.error('Error catching during create email verification code table');
             throw err;

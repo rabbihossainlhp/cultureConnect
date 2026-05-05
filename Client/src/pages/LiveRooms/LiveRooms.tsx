@@ -39,6 +39,7 @@ const mapRoomListItemToUiRoom = (room: RoomListItem): UiRoom => ({
   visibility: room.visibility,
   description: room.description || undefined,
   createdAt: new Date().toISOString(),
+  hostUserId: room.host_user_id ? Number(room.host_user_id) : undefined,
 });
 
 function LiveRooms() {
@@ -1316,22 +1317,33 @@ function LiveRooms() {
                               {roomUsers.length === 0 ? (
                                 <p className="text-xs text-slate-500 p-3">No users online</p>
                               ) : (
-                                roomUsers
-                                  .filter((ru) => Number(ru.userId) !== Number(user?.id))
-                                  .map((ru) => (
+                                roomUsers.map((ru) => {
+                                  const isHost = selectedRoom?.hostUserId === Number(ru.userId);
+                                  const isCurrentUser = Number(ru.userId) === Number(user?.id);
+                                  
+                                  return (
                                     <button
                                       key={`${ru.userId}-${ru.username}`}
                                       onClick={() => {
-                                        openDmWithUser(ru);
-                                        setShowUsersDropdown(false);
-                                        // ✅ FIX: Only close sidebar on small screens
-                                        if (isSmallScreen) {
-                                          setSidebarOpen(false);
+                                        if (!isCurrentUser) {
+                                          openDmWithUser(ru);
+                                          setShowUsersDropdown(false);
+                                          // ✅ FIX: Only close sidebar on small screens
+                                          if (isSmallScreen) {
+                                            setSidebarOpen(false);
+                                          }
                                         }
                                       }}
-                                      className="w-full px-3 py-2.5 text-left text-sm hover:bg-blue-50 transition flex items-center gap-2"
+                                      disabled={isCurrentUser}
+                                      className={`w-full px-3 py-2.5 text-left text-sm transition flex items-center gap-2 ${
+                                        isCurrentUser 
+                                          ? "opacity-50 cursor-default bg-slate-50" 
+                                          : "hover:bg-blue-50"
+                                      }`}
                                     >
-                                      <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                                      <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 ${
+                                        isHost ? "border-orange-400" : "border-transparent"
+                                      }`}>
                                         <img
                                           src={ru.profile_picture}
                                           alt={ru.username}
@@ -1339,11 +1351,16 @@ function LiveRooms() {
                                         />
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-slate-800 text-sm">{ru.username}</p>
+                                        <p className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
+                                          {ru.username}
+                                          {isCurrentUser && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">You</span>}
+                                          {isHost && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Host</span>}
+                                        </p>
                                         <p className="text-xs text-slate-500">{ru.country}</p>
                                       </div>
                                     </button>
-                                  ))
+                                  );
+                                })
                               )}
                             </div>
                           </div>

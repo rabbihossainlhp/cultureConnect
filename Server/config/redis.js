@@ -18,20 +18,31 @@ const client = createClient({
 });
 
 
+
+const connectRedisClient = async()=>{
+    try{
+        await client.connect();
+        console.log("Redis Connected");
+
+        client.on('ready',()=>{
+            console.log('Redis Client Ready');
+        });
+
+    }catch(err){
+        console.error('Redis connection error: ',err.message);
+    }
+}
+
+
+
+
 client.on('error',(err)=>{
     console.error('Redis Client Error: ', err.message);
 });
 
-client.on('connect',()=>{
-    console.log('Redis Connected');
-});
-
-client.on('ready',()=>{
-    console.log('Redis Client Ready');
-});
 
 
-client.connect().catch(console.error)
-
-
-module.exports = client;
+module.exports = {
+    client,
+    connectRedisClient
+};
