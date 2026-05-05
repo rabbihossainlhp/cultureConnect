@@ -151,7 +151,7 @@ function Explore() {
   };
 
   return (
-    <main className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-amber-50/40 via-white to-sky-50/60">
+    <main className="min-h-screen pb-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-amber-50/40 via-white to-sky-50/60 cc-page-offset">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 -left-40 w-96 h-96 bg-sky-200/20 rounded-full blur-3xl animate-pulse delay-1000"></div>

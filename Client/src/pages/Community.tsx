@@ -98,7 +98,7 @@ const testimonials = [
 
 export default function Community() {
   return (
-    <section className="w-full bg-linear-to-b from-orange-50 via-white to-pink-50 px-4 py-12 sm:px-6 lg:px-8">
+    <section className="w-full bg-linear-to-b from-orange-50 via-white to-pink-50 px-4 py-12 sm:px-6 lg:px-8 cc-page-offset">
       <div className="mx-auto max-w-7xl pt-12">
         <div className="grid items-center gap-8 lg:grid-cols-2">
           <div>

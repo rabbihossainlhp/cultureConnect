@@ -6,7 +6,6 @@ const { addRommToUserJoinedRoom } = require('../../socket/socket.helper');
 const createRoomController = async (req,res) =>{
     const {slug,roomName,language,visibility, description,capacity,password} = req.body;
 
-    console.log("RECEIVED INFO: ",slug,roomName,language,visibility,description,capacity,password)
     if(!slug || !roomName || !language || !visibility ||  !capacity){
         return res.status(400).json({
             success:false,
@@ -77,7 +76,7 @@ const createRoomController = async (req,res) =>{
             VALUES($1,$2,'host',true,CURRENT_TIMESTAMP)
             ON CONFLICT (room_id,user_id) DO NOTHING
         `;
-        
+
         await addRommToUserJoinedRoom(req.user.id, createdRoom.rows[0].id);
 
 

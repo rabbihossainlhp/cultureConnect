@@ -46,7 +46,7 @@ const createPostController = async (req,res) =>{
         })
 
     }catch(err){
-        console.log("Server error during create a post: ",err.message);
+        console.log("Server error during create a post: ",err);
         return res.status(500).json({
             success:false,
             message:"Server Error During Create a Post",

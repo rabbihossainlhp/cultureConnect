@@ -273,7 +273,7 @@ function Navbar() {
             <NavLink
               onClick={closeMenus}
               to="/auth/login"
-              className="btn btn-ghost font-medium text-gray-700 hover:text-orange-500 hidden sm:inline-flex"
+              className="cc-btn cc-btn-ghost hidden sm:inline-flex"
             >
               Sign In
             </NavLink>
@@ -282,7 +282,7 @@ function Navbar() {
               <NavLink
                 onClick={closeMenus}
                 to="/auth/signup"
-                className="btn bg-linear-to-r from-orange-500 to-pink-500 text-white border-none hover:shadow-lg hover:shadow-orange-500/30 font-semibold"
+                className="cc-btn cc-btn-primary"
               >
                 Get Started
               </NavLink>

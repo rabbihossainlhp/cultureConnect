@@ -119,7 +119,7 @@ export default function Signup() {
 
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-linear-to-b from-orange-50 via-white to-pink-50 px-4 py-10 sm:px-6 lg:px-8">
+    <section className="relative min-h-screen overflow-hidden bg-linear-to-b from-orange-50 via-slate-50 to-cyan-50 px-4 py-10 sm:px-6 lg:px-8">
       
       <div className="fixed right-4 top-4 z-50 w-[min(92vw,360px)]">
         <AnimatePresence>
@@ -177,7 +177,7 @@ export default function Signup() {
           </p>
         </aside>
 
-        <div className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-[0_20px_60px_-30px_rgba(249,115,22,0.4)] backdrop-blur-sm sm:p-8">
+        <div className="cc-soft-panel p-6 sm:p-8">
           <div className="mb-6 text-center lg:text-left">
             <h2 className="text-3xl font-extrabold text-slate-800">Create Your Account</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -191,7 +191,7 @@ export default function Signup() {
                 <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Username
                 </span>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-200">
+                <div className="cc-input-shell">
                   <UserRound className="h-4 w-4 text-orange-500" />
                   <input
                     type="text"
@@ -207,7 +207,7 @@ export default function Signup() {
                 <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Email
                 </span>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-200">
+                <div className="cc-input-shell">
                   <Mail className="h-4 w-4 text-orange-500" />
                   <input
                     type="email"
@@ -225,7 +225,7 @@ export default function Signup() {
                 <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Country
                 </span>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <div className="cc-input-shell">
                   <Globe2 className="h-4 w-4 text-orange-500" />
                   <select
                     value={country}
@@ -246,7 +246,7 @@ export default function Signup() {
                 <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Native Language
                 </span>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <div className="cc-input-shell">
                   <Languages className="h-4 w-4 text-orange-500" />
                   <select
                     value={nativeLanguage}
@@ -268,7 +268,7 @@ export default function Signup() {
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                 Password
               </span>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-200">
+              <div className="cc-input-shell">
                 <Lock className="h-4 w-4 text-orange-500" />
                 <input
                   type={showPassword ? "text" : "password"}
@@ -301,7 +301,7 @@ export default function Signup() {
             <div className="mb-6 flex flex-col items-center">
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-linear-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-orange-200"
+                  className="cc-btn cc-btn-primary w-full px-5 py-3"
                   >
                   {isLoading? "Creating Account....":"Create Account"}
                 </button>
@@ -311,7 +311,7 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={signupWithGoogle}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 shadow-sm transition-all duration-200"
+                  className="cc-btn cc-btn-ghost w-full py-3 px-4"
                 >
                   <img
                     src="https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw"
@@ -319,7 +319,7 @@ export default function Signup() {
                     className="w-5 h-5 mr-3"
                     style={{ background: 'white', borderRadius: '2px' }}
                   />
-                  <span className="text-gray-700 font-medium">Continue with Google</span>
+                  <span className="font-medium">Continue with Google</span>
                 </button>
               </div>
           </form>
