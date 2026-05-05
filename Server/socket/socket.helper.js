@@ -29,15 +29,26 @@ const ensureActiveRoom = async (roomId) =>{
 const fetchOnlineUsers = async(roomId)=>{
     const usersQuery = `
         SELECT 
-        u.id AS "userId",
-        u.username,
-        u.country,
-        u.profile_picture
+            u.id AS "userId",
+            u.username,
+            u.country,
+            u.profile_picture
 
         FROM room_participants rp JOIN users u ON u.id = rp.user_id
         WHERE rp.room_id = $1
         AND rp.is_online = true
-        ORDER BY u.username ASC
+
+        UNION
+
+        SELECT
+            u.id AS "userId",
+            u.username,
+            u.country,
+            u.profile_picture
+        FROM rooms r
+        JOIN users u ON u.id=r.host_user_id
+        WHERE r.id=$1
+        ORDER BY username ASC
     `;
 
     const usersResult = await dbConnection.query(usersQuery,[roomId]);
