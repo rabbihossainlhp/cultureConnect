@@ -88,7 +88,7 @@ function Navbar() {
         isScrolled ? "bg-white shadow-lg" : "bg-white/95 backdrop-blur-md shadow-sm"
       }`}
     >
-      <div className="navbar-start">
+      <div className="navbar-start min-w-0">
         <div className="dropdown lg:hidden">
           <button
             type="button"
@@ -175,7 +175,7 @@ function Navbar() {
         <NavLink
           onClick={closeMenus}
           to="/"
-          className="btn btn-ghost h-auto gap-2 px-2 py-1 hover:bg-transparent"
+          className="btn btn-ghost h-auto max-w-full gap-2 px-2 py-1 hover:bg-transparent"
         >
           <div className="flex items-center gap-2">
             <img
@@ -183,7 +183,7 @@ function Navbar() {
               alt="CultureConnect logo"
               className="h-9 w-9 object-contain sm:h-10 sm:w-10"
             />
-            <span className="bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-lg font-bold text-transparent sm:text-xl lg:text-2xl">
+            <span className="hidden bg-linear-to-r from-orange-500 to-pink-500 bg-clip-text text-lg font-bold text-transparent sm:inline sm:text-xl lg:text-2xl">
               CultureConnect
             </span>
           </div>
@@ -260,7 +260,7 @@ function Navbar() {
         </ul>
       </div>
 
-      <div className="navbar-end gap-2 sm:gap-3">
+      <div className="navbar-end gap-1 sm:gap-3">
         {isAuthenticated && (
           <button className="btn btn-ghost btn-circle relative" aria-label="Notifications">
             <Bell size={20} className="text-gray-700" />
@@ -282,7 +282,7 @@ function Navbar() {
               <NavLink
                 onClick={closeMenus}
                 to="/auth/signup"
-                className="cc-btn cc-btn-primary"
+                className="cc-btn cc-btn-primary hidden sm:inline-flex"
               >
                 Get Started
               </NavLink>

@@ -1,7 +1,12 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { Compass, Globe2, Home, Users } from "lucide-react";
 
 function NotFound() {
+  useEffect(() => {
+    document.title = "404 | CultureConnect";
+  }, []);
+
   return (
     <main className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-10 bg-linear-to-b from-orange-50 via-white to-sky-50 flex items-center">
       <section className="max-w-3xl mx-auto w-full rounded-3xl border border-white/80 bg-white/90 p-8 sm:p-10 shadow-[0_20px_60px_-30px_rgba(249,115,22,0.45)] text-center">
