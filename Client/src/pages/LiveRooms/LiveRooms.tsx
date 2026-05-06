@@ -536,8 +536,8 @@ function LiveRooms() {
       setSocketError("");
 
       // Deduplicate users by userId and ensure valid entries
-      const rawUsers = (payload.users || []) as any[];
-      const dedupedUsers: any[] = [];
+      const rawUsers = payload.users || [];
+      const dedupedUsers: RoomUser[] = [];
       for (const u of rawUsers) {
         if (!u || !u.userId) continue;
         const idNum = Number(u.userId);
@@ -548,7 +548,11 @@ function LiveRooms() {
       }
 
       // Ensure host is tracked in room list and present in users if provided
-      const hostId = (payload.room as any).host_user_id ?? (payload.room as any).hostUserId ?? undefined;
+      const payloadRoom = payload.room as RoomJoinedPayload["room"] & {
+        host_user_id?: string | number;
+        hostUserId?: string | number;
+      };
+      const hostId = payloadRoom.host_user_id ?? payloadRoom.hostUserId ?? undefined;
 
       if (hostId) {
         const hostNum = Number(hostId);
@@ -1474,7 +1478,7 @@ function LiveRooms() {
                               ) : (
                                 (() => {
                                   // Ensure host appears first (if present) and dedupe users
-                                  const usersMap = new Map<number, any>();
+                                  const usersMap = new Map<number, RoomUser>();
                                   for (const ru of roomUsers) {
                                     const idNum = Number(ru.userId);
                                     if (!idNum || Number.isNaN(idNum)) continue;
@@ -1489,7 +1493,7 @@ function LiveRooms() {
                                     return String(a.username || "").localeCompare(String(b.username || ""));
                                   });
 
-                                  return ordered.map((ru: any) => {
+                                  return ordered.map((ru: RoomUser) => {
                                     const isHost = selectedRoom?.hostUserId === Number(ru.userId);
                                     const isCurrentUser = Number(ru.userId) === Number(user?.id);
 
