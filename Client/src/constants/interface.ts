@@ -127,6 +127,8 @@ export interface RoomListItem {
   language: string;
   status: string;
   visibility: "public" | "private";
+  host_user_id?: number;
+  hostUserId?: number;
 }
 
 export interface RoomListResponse {

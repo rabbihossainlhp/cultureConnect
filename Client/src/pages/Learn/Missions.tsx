@@ -16,14 +16,14 @@ export default function Missions() {
   };
 
   return (
-    <section className="min-h-[calc(100vh-88px)] bg-linear-to-br from-slate-50 via-indigo-50 to-purple-50 py-20 px-4 md:px-8">
+    <section className="min-h-[calc(100vh-88px)] bg-linear-to-br from-slate-50 via-orange-50/40 to-cyan-50/40 py-20 px-4 md:px-8 cc-page-offset">
       <div className="mx-auto max-w-6xl">
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           {/* Left Section */}
           <div className="space-y-8">
             {/* Coming Soon Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-semibold text-sm">
               <Rocket size={16} />
               Coming Soon
             </div>
@@ -32,7 +32,7 @@ export default function Missions() {
             <div>
               <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-4">
                 Learn Through
-                <span className="block text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-purple-600">
+                <span className="block cc-accent-text">
                   Exciting Missions
                 </span>
               </h1>
@@ -49,7 +49,7 @@ export default function Missions() {
                 { icon: Flame, title: "Build Streaks", desc: "Stay consistent and maintain daily streaks" },
               ].map((feature, idx) => (
                 <div key={idx} className="flex gap-4 items-start">
-                  <div className="p-3 rounded-lg bg-indigo-100 text-indigo-600 shrink-0">
+                  <div className="p-3 rounded-lg bg-orange-100 text-orange-600 shrink-0">
                     <feature.icon size={24} />
                   </div>
                   <div>
@@ -70,11 +70,11 @@ export default function Missions() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleNotify()}
-                  className="flex-1 px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-sm"
+                  className="flex-1 px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:outline-none text-sm"
                 />
                 <button
                   onClick={handleNotify}
-                  className="px-6 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition transform hover:scale-105"
+                  className="cc-btn cc-btn-primary px-6 py-3"
                 >
                   Notify Me
                 </button>
@@ -128,7 +128,7 @@ export default function Missions() {
             { icon: BookOpen, label: "Hours", value: "100+" },
           ].map((stat, idx) => (
             <div key={idx} className="text-center">
-              <stat.icon className="mx-auto mb-2 text-indigo-600" size={32} />
+              <stat.icon className="mx-auto mb-2 text-orange-600" size={32} />
               <p className="text-2xl md:text-3xl font-bold text-slate-900">{stat.value}</p>
               <p className="text-xs md:text-sm text-slate-600">{stat.label}</p>
             </div>
@@ -138,10 +138,10 @@ export default function Missions() {
         {/* Bottom CTA */}
         <div className="text-center mt-16">
           <p className="text-slate-600 mb-4">
-            Estimated Launch: <span className="font-bold text-indigo-600">Q2 2026</span>
+            Estimated Launch: <span className="font-bold text-orange-600">Q2 2026</span>
           </p>
           <div className="inline-block">
-            <div className="px-6 py-3 rounded-full bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold animate-pulse">
+            <div className="px-6 py-3 rounded-full bg-linear-to-r from-orange-500 to-pink-500 text-white font-semibold animate-pulse">
               More exciting features coming soon... 🚀
             </div>
           </div>

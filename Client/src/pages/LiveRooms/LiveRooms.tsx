@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Menu, Image as ImageIcon, Paperclip, Trash2, Download } from "lucide-react";
+import { Plus, Send, Search, Users, RefreshCcw, MessageCircle, X, MoreVertical, Menu, Image as ImageIcon, Paperclip, Trash2, Download, Globe2, Lock, Sparkles, LogIn, UserPlus, PlayCircle } from "lucide-react";
+import { Link } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
 import { createRoomApiHandler, getRoomListApiHandler, uploadMessageMediaApiHandler } from "../../services/api.service";
 import type { DirectMessage, DirectMessageResponse, DmTargetUser, Message, RoomListItem, RoomUser } from "../../constants/interface";
@@ -41,6 +42,30 @@ const mapRoomListItemToUiRoom = (room: RoomListItem): UiRoom => ({
   createdAt: new Date().toISOString(),
   hostUserId: room.host_user_id ? Number(room.host_user_id) : undefined,
 });
+
+const guestPreviewRooms = [
+  {
+    id: "guest-1",
+    title: "Global Language Cafe",
+    language: "English, Spanish",
+    members: "126 online",
+    tone: "bg-cyan-50 border-cyan-200",
+  },
+  {
+    id: "guest-2",
+    title: "Bangla x Arabic Exchange",
+    language: "Bangla, Arabic",
+    members: "48 online",
+    tone: "bg-orange-50 border-orange-200",
+  },
+  {
+    id: "guest-3",
+    title: "Culture Story Circle",
+    language: "Multilingual",
+    members: "83 online",
+    tone: "bg-emerald-50 border-emerald-200",
+  },
+];
 
 function LiveRooms() {
   const { user, isAuthenticated } = useAuth();
@@ -439,6 +464,12 @@ function LiveRooms() {
 
   // Socket connection and listeners
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsConnected(false);
+      socketRef.current = null;
+      return;
+    }
+
     const socket = io("http://localhost:4713", {
       withCredentials: true,
       reconnection: true,
@@ -503,27 +534,50 @@ function LiveRooms() {
 
     socket.on("room:joined", (payload: RoomJoinedPayload) => {
       setSocketError("");
-      setRoomUsers(payload.users || []);
+
+      // Deduplicate users by userId and ensure valid entries
+      const rawUsers = (payload.users || []) as any[];
+      const dedupedUsers: any[] = [];
+      for (const u of rawUsers) {
+        if (!u || !u.userId) continue;
+        const idNum = Number(u.userId);
+        if (Number.isNaN(idNum)) continue;
+        if (!dedupedUsers.find((x) => Number(x.userId) === idNum)) {
+          dedupedUsers.push(u);
+        }
+      }
+
+      // Ensure host is tracked in room list and present in users if provided
+      const hostId = (payload.room as any).host_user_id ?? (payload.room as any).hostUserId ?? undefined;
+
+      if (hostId) {
+        const hostNum = Number(hostId);
+        // update rooms state to include hostUserId for this room so UI can highlight host
+        setRooms((prev) => prev.map((r) => (Number(r.roomId) === Number(payload.room.id) ? { ...r, hostUserId: hostNum } : r)));
+
+        // If host is not in dedupedUsers but backend did not include profile, we can't synthesize it here.
+        // If backend included host in payload.users, dedup above will have kept it.
+      }
+
+      setRoomUsers(dedupedUsers);
       setMessages(payload.messages || []);
-      
-      // ✅ FIX: Ensure room is added to joinedRoomIds when we rejoin
-      // Convert room.id to number to ensure type consistency
+
+      // Ensure room is added to joinedRoomIds when we rejoin
       setJoinedRoomIds((prev) => {
         const next = new Set(prev);
         const roomIdNum = Number(payload.room.id);
         next.add(roomIdNum);
         return next;
       });
-      
-      // ✅ FIX: Only set selected room if none is currently selected
-      // This prevents auto-rejoin from overwriting the user's previously viewed room
+
+      // Only set selected room if none is currently selected
       setSelectedUiRoomId((prev) => {
         if (prev) {
           return prev; // Keep current selection
         }
         return String(payload.room.id);
       });
-      
+
       setChatMode("room");
       setDmTarget(null);
       setDmMessages([]);
@@ -665,7 +719,7 @@ function LiveRooms() {
       socket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // dependency only on user because refs hold the rest
+  }, [user, isAuthenticated]); // dependency only on auth/user because refs hold the rest
 
   const resetRoomUi = () => {
     setMessages([]);
@@ -944,6 +998,107 @@ function LiveRooms() {
       setSocketError(message);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <section className="relative min-h-[calc(100vh-6rem)] overflow-hidden bg-slate-950 text-white cc-page-offset">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(14,165,233,0.28),transparent_30%),radial-gradient(circle_at_88%_20%,rgba(249,115,22,0.24),transparent_34%),radial-gradient(circle_at_40%_90%,rgba(16,185,129,0.18),transparent_35%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:34px_34px]" />
+
+        <div className="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-100">
+                <Sparkles className="h-4 w-4" />
+                Live cultural conversations
+              </div>
+
+              <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">
+                Join real-time rooms where language meets culture.
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg">
+                Practice with people, not bots. Discover public rooms, private learning circles, and meaningful cross-cultural conversations in one place.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link
+                  to="/auth/signup"
+                  className="cc-btn rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Create Free Account
+                </Link>
+                <Link
+                  to="/auth/login"
+                  className="cc-btn rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-4 text-sm text-slate-200">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5">
+                  <Globe2 className="h-4 w-4" />
+                  140+ countries
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5">
+                  <Users className="h-4 w-4" />
+                  Active global community
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5">
+                  <Lock className="h-4 w-4" />
+                  Private room options
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-5 backdrop-blur-md sm:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm font-semibold text-cyan-100">Trending Rooms Preview</p>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-slate-100">Guest Mode</span>
+              </div>
+
+              <div className="space-y-3">
+                {guestPreviewRooms.map((room) => (
+                  <div key={room.id} className={`rounded-2xl border p-4 ${room.tone}`}>
+                    <p className="text-sm font-bold text-slate-900">{room.title}</p>
+                    <p className="mt-1 text-xs text-slate-700">{room.language}</p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-700">{room.members}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Join after login
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cyan-100">Step 1</p>
+              <h2 className="mt-2 text-lg font-bold">Create your identity</h2>
+              <p className="mt-2 text-sm text-slate-200">Set your profile, language goals, and communication preferences.</p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cyan-100">Step 2</p>
+              <h2 className="mt-2 text-lg font-bold">Join rooms that fit</h2>
+              <p className="mt-2 text-sm text-slate-200">Pick public rooms or use private-password spaces for focused practice.</p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cyan-100">Step 3</p>
+              <h2 className="mt-2 text-lg font-bold">Build daily momentum</h2>
+              <p className="mt-2 text-sm text-slate-200">Stay consistent through live chat, direct messaging, and cultural tasks.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="fixed inset-0 top-22 bg-slate-50 flex flex-col overflow-hidden">
@@ -1317,50 +1472,68 @@ function LiveRooms() {
                               {roomUsers.length === 0 ? (
                                 <p className="text-xs text-slate-500 p-3">No users online</p>
                               ) : (
-                                roomUsers.map((ru) => {
-                                  const isHost = selectedRoom?.hostUserId === Number(ru.userId);
-                                  const isCurrentUser = Number(ru.userId) === Number(user?.id);
-                                  
-                                  return (
-                                    <button
-                                      key={`${ru.userId}-${ru.username}`}
-                                      onClick={() => {
-                                        if (!isCurrentUser) {
-                                          openDmWithUser(ru);
-                                          setShowUsersDropdown(false);
-                                          // ✅ FIX: Only close sidebar on small screens
-                                          if (isSmallScreen) {
-                                            setSidebarOpen(false);
+                                (() => {
+                                  // Ensure host appears first (if present) and dedupe users
+                                  const usersMap = new Map<number, any>();
+                                  for (const ru of roomUsers) {
+                                    const idNum = Number(ru.userId);
+                                    if (!idNum || Number.isNaN(idNum)) continue;
+                                    if (!usersMap.has(idNum)) usersMap.set(idNum, ru);
+                                  }
+
+                                  // If the host exists in selectedRoom but not in usersMap, we won't invent profile data.
+                                  const ordered = Array.from(usersMap.values()).sort((a, b) => {
+                                    const hostIdNum = Number(selectedRoom?.hostUserId || 0);
+                                    if (Number(a.userId) === hostIdNum) return -1;
+                                    if (Number(b.userId) === hostIdNum) return 1;
+                                    return String(a.username || "").localeCompare(String(b.username || ""));
+                                  });
+
+                                  return ordered.map((ru: any) => {
+                                    const isHost = selectedRoom?.hostUserId === Number(ru.userId);
+                                    const isCurrentUser = Number(ru.userId) === Number(user?.id);
+
+                                    return (
+                                      <button
+                                        key={`${ru.userId}-${ru.username}`}
+                                        onClick={() => {
+                                          if (!isCurrentUser) {
+                                            openDmWithUser(ru);
+                                            setShowUsersDropdown(false);
+                                            // ✅ FIX: Only close sidebar on small screens
+                                            if (isSmallScreen) {
+                                              setSidebarOpen(false);
+                                            }
                                           }
-                                        }
-                                      }}
-                                      disabled={isCurrentUser}
-                                      className={`w-full px-3 py-2.5 text-left text-sm transition flex items-center gap-2 ${
-                                        isCurrentUser 
-                                          ? "opacity-50 cursor-default bg-slate-50" 
-                                          : "hover:bg-blue-50"
-                                      }`}
-                                    >
-                                      <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 ${
-                                        isHost ? "border-orange-400" : "border-transparent"
-                                      }`}>
-                                        <img
-                                          src={ru.profile_picture}
-                                          alt={ru.username}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
-                                          {ru.username}
-                                          {isCurrentUser && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">You</span>}
-                                          {isHost && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Host</span>}
-                                        </p>
-                                        <p className="text-xs text-slate-500">{ru.country}</p>
-                                      </div>
-                                    </button>
-                                  );
-                                })
+                                        }}
+                                        disabled={isCurrentUser}
+                                        className={`w-full px-3 py-2.5 text-left text-sm transition flex items-center gap-2 ${
+                                          isCurrentUser
+                                            ? "opacity-50 cursor-default bg-slate-50"
+                                            : "hover:bg-blue-50"
+                                        }`}
+                                      >
+                                        <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 ${
+                                          isHost ? "border-orange-400" : "border-transparent"
+                                        }`}>
+                                          <img
+                                            src={ru.profile_picture}
+                                            alt={ru.username}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
+                                            {ru.username}
+                                            {isCurrentUser && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">You</span>}
+                                            {isHost && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Host</span>}
+                                          </p>
+                                          <p className="text-xs text-slate-500">{ru.country}</p>
+                                        </div>
+                                      </button>
+                                    );
+                                  });
+                                })()
                               )}
                             </div>
                           </div>

@@ -104,7 +104,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-linear-to-b from-purple-50 via-white to-blue-50 px-4 py-10 sm:px-6 lg:px-8">
+    <section className="relative min-h-screen overflow-hidden bg-linear-to-b from-purple-50 via-white to-blue-50 px-4 py-10 sm:px-6 lg:px-8 cc-page-offset">
       {/* Toast Notification */}
       <div className="fixed right-4 top-4 z-50 w-[min(92vw,360px)]">
         <AnimatePresence>

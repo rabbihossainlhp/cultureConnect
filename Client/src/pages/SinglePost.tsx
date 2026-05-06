@@ -157,7 +157,7 @@ function SinglePost() {
 
 
   return (
-    <main className="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-orange-50/40 via-white to-sky-50/50">
+    <main className="min-h-screen pb-16 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-orange-50/40 via-white to-sky-50/50 cc-page-offset">
       <section className="max-w-6xl mx-auto">
         <Link
           to="/explore"

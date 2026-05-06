@@ -149,7 +149,7 @@ export default function Profile() {
   }
 
   return (
-    <section className="w-full min-h-screen py-12 px-4 sm:px-6 lg:px-10 bg-linear-to-b from-orange-50 via-white to-pink-50">
+    <section className="w-full min-h-screen py-12 px-4 sm:px-6 lg:px-10 bg-linear-to-b from-orange-50 via-white to-pink-50 cc-page-offset">
       {/* Toast Notification */}
       <div className="fixed right-4 top-4 z-50 w-[min(92vw,360px)]">
         <AnimatePresence>
