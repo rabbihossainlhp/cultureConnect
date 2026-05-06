@@ -470,7 +470,7 @@ function LiveRooms() {
       return;
     }
 
-    const socket = io("http://localhost:4713", {
+    const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:4713", {
       withCredentials: true,
       reconnection: true,
       reconnectionDelay: 1000,

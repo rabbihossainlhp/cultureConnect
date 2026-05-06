@@ -21,7 +21,7 @@ export const useSocket = (user: User | null, handlers: SocketEventHandlers) => {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:4713", {
+    const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:4713", {
       withCredentials: true,
     });
 
