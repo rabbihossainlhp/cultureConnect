@@ -10,7 +10,7 @@ const middlewares = [
     morgan('dev'),
     express.json(),
     cors({
-        origin:['http://localhost:5173'],
+        origin:[process.env.CLIENT_URL || 'http://localhost:5173'],
         credentials:true,
         allowedHeaders:['Content-Type'],
         methods:['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
