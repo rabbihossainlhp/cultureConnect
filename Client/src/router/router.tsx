@@ -1,7 +1,7 @@
 
 import Community from "../pages/Community";
 import UserDashBoard from "../pages/Deshboard/UserDashBoard/UserDashBoard";
-import { createBrowserRouter, Navigate } from "react-router";
+import { createHashRouter, Navigate } from "react-router";
 import RootLayOut from "../Layout/RootLayOut";
 import DashboardLayout from "../Layout/DashboardLayout";
 import Auth from "../pages/Auth";
@@ -58,7 +58,7 @@ const dashboardRoutes = [
 ]
 
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path:"/",
     Component:RootLayOut,
