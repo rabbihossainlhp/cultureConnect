@@ -4,16 +4,30 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     host:'smtp.gmail.com',
     port:587,
-    secure:true,
+    secure:false,
+    requireTLS:false,    
     family:4,
-    requireTLS:true,
-    connectionTimeout:10000,
-    greetingTimeout:10000,
-    socketTimeout:10000,
+    connectionTimeout:20000,
+    greetingTimeout:20000,
+    socketTimeout:20000,
     auth:{
         user:process.env.EMAIL_USER,
         pass:process.env.EMAIL_PASS
+    },
+    tls:{
+        ciphers:'TLSv1.2',
+        rejectUnauthorized:false
     }
+
+});
+
+
+transporter.verify((err,success)=>{
+        if(err){
+            console.log("SMTP verify Failed:",err);
+        }else{
+            console.log("SMTP transporter ready");
+        }
 })
 
 //function to send mail..
