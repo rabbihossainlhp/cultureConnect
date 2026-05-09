@@ -185,8 +185,15 @@ const registerController = async(req,res) =>{
 
 
 const logoutController = async(req,res)=>{
+    const isProd = process.env.NODE_ENV==='production';
+
     try{
-        res.clearCookie("access_token");
+        res.clearCookie("access_token",{
+            httpOnly:true,
+            secure:isProd,
+            sameSite:isProd?"none":"lax",
+            path:'/'
+        });
         return res.status(200).json({
             success:true,
             message:"Logout successfull!",
