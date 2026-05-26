@@ -16,7 +16,7 @@ const createRoomController = async (req,res) =>{
 
 
    //private room's password..... initially null.
-    const hashPass = null;
+    let hashPass = null;
 
     if(visibility === 'private' ){
         if(!password){
