@@ -131,7 +131,7 @@ const getDmHistory = async(currentUserId,targetUserId,limit = 30)=>{
             u_receiver.profile_picture as receiver_profile_picture,
             dm.message_text,
             dm.message_type,
-            dm.media_url
+            dm.media_url,
             dm.created_at
             FROM direct_messages dm
             LEFT JOIN users u_sender ON dm.sender_user_id = u_sender.id
