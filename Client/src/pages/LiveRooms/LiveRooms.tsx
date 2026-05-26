@@ -1592,22 +1592,6 @@ function LiveRooms() {
                   <p className="text-sm text-slate-500 mt-1">Pick from the left panel to start messaging</p>
                 </div>
               </div>
-            ) : selectedRoom && !joinedRoomIds.has(selectedRoom.roomId) ? (
-              <div className="grid h-full place-items-center text-center">
-                <div>
-                  <div className="text-5xl mb-4">🔒</div>
-                  <p className="text-lg font-semibold text-slate-700 mb-2">Join this room first</p>
-                  <p className="text-sm text-slate-600 mb-4">
-                    You need to join <strong>{selectedRoom.name}</strong> to see messages
-                  </p>
-                  <button
-                    onClick={() => joinRoom(selectedRoom)}
-                    className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition"
-                  >
-                    Join Room
-                  </button>
-                </div>
-              </div>
             ) : chatMode === "dm" ? (
               dmMessages.length === 0 ? (
                 <div className="grid h-full place-items-center text-slate-400 text-center">
@@ -1713,6 +1697,22 @@ function LiveRooms() {
                   );
                 })
               )
+            ) : selectedRoom && !joinedRoomIds.has(selectedRoom.roomId) ? (
+              <div className="grid h-full place-items-center text-center">
+                <div>
+                  <div className="text-5xl mb-4">🔒</div>
+                  <p className="text-lg font-semibold text-slate-700 mb-2">Join this room first</p>
+                  <p className="text-sm text-slate-600 mb-4">
+                    You need to join <strong>{selectedRoom.name}</strong> to see messages
+                  </p>
+                  <button
+                    onClick={() => joinRoom(selectedRoom)}
+                    className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition"
+                  >
+                    Join Room
+                  </button>
+                </div>
+              </div>
             ) : messages.length === 0 ? (
               <div className="grid h-full place-items-center text-slate-400 text-center">
                 <div>
