@@ -1,4 +1,4 @@
-# 🌍 CultureConnect
+#  CultureConnect
 
 A full-stack platform that connects people across cultures, enabling them to share experiences, learn languages, participate in live discussions, and build meaningful relationships.
 
